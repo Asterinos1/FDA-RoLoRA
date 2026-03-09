@@ -208,3 +208,6 @@ __marimo__/
 
 # extras
 venv/
+fdaopt/lol.py
+manual.txt
+results/round_metrics/*.csv

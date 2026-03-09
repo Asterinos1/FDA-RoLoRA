@@ -1,6 +1,8 @@
 import gc
+from tqdm import tqdm
 
-from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
+# from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
+from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import (compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters,
     get_updated_client_parameters, variance, compute_metrics, fda_variance_approx, stop_training_with_threshold)
@@ -27,7 +29,9 @@ def fda_opt(hyperparams):
         hyperparams['checkpoint'],
         hyperparams['num_clients'],
         hyperparams['alpha'],
-        hyperparams['batch_size']
+        hyperparams['batch_size'],
+        hyperparams.get('num_workers', 0),
+        hyperparams.get('pin_memory', False)
     )
 
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -54,7 +58,9 @@ def fda_opt(hyperparams):
     # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the SAVE_DEVICE
     client_train_params_dict = {
         client_id: [param.detach().clone().to(SAVE_DEVICE) for param in round_start_train_params]
-        for client_id in range(hyperparams['clients_per_round'])
+        # for client_id in range(hyperparams['clients_per_round'])
+        # small error here
+        for client_id in range(hyperparams['num_clients'])
     }
 
     # Initialize the AMS sketch
@@ -65,7 +71,8 @@ def fda_opt(hyperparams):
     theta = hyperparams['theta']
     first_round = True
 
-    for r in range(hyperparams['total_rounds']):
+    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="FDA Federated Training")
+    for r in pbar_rounds:
 
         training_loss = 0.0
 
@@ -89,15 +96,19 @@ def fda_opt(hyperparams):
         while var_approx <= theta and round_epochs < hyperparams['max_epochs']:
 
             round_epochs += 1
-
-            for client_id in sampled_clients:
+            
+            pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} | Epoch {round_epochs}", leave=False)
+            for client_id in pbar_clients:
                 training_loss += client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds,
                                                     client_id, round_steps)
+                pbar_clients.set_postfix({"client_id": client_id})
 
             # Compute the drifts (differences) between the round start parameters and the client parameters
             client_drifts = compute_client_drifts(round_start_train_params, client_train_params_dict)
             # Calculate the current variance approximation with LinearFDA
             var_approx = fda_variance_approx(client_drifts, ams_sketch=ams_sketch)
+
+            pbar_rounds.set_postfix({"var": f"{var_approx:.4e}", "theta": f"{theta:.4e}"})
 
             if first_round:
                 first_round = False
@@ -135,8 +146,6 @@ def fda_opt(hyperparams):
         metrics['round_steps'] = round_epochs * round_steps
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
-
-        print(metrics)
 
         theta = ((hyperparams['max_epochs'] / 2) / round_epochs) * metrics['variance']
 

@@ -1,5 +1,6 @@
 from fdaopt.utils import DEVICE
 from fdaopt.models.ops import copy_parameters
+from tqdm import tqdm
 
 def federated_training_step(model, train_params, client_train_params_dict, client_opt, fed_ds):
     """
@@ -25,8 +26,9 @@ def federated_training_step(model, train_params, client_train_params_dict, clien
     training_loss = 0.0
     num_clients = len(client_train_params_dict)
 
-    # Iterate over each client
-    for client_id in client_train_params_dict.keys():
+    # Iterate over each client with tqdm
+    pbar_step = tqdm(client_train_params_dict.keys(), desc="Federated Step (Clients)", leave=False)
+    for client_id in pbar_step:
         # Copy client-specific parameters to the model's parameters
         copy_parameters(
             from_params=client_train_params_dict[client_id],
@@ -58,12 +60,12 @@ def federated_training_step(model, train_params, client_train_params_dict, clien
 
         # Accumulate the loss
         training_loss += loss.item()
+        pbar_step.set_postfix({"loss": f"{loss.item():.4f}"})
 
     # Calculate the average loss
     training_loss = training_loss / num_clients
 
     return training_loss
-
 
 
 def client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds, client_id, round_steps):
@@ -96,7 +98,9 @@ def client_round_train(model, train_params, client_train_params_dict, client_opt
 
     training_loss = 0.0
 
-    for step in range(round_steps):
+    # Added tqdm for local client steps
+    pbar_local = tqdm(range(round_steps), desc=f"  Client {client_id} Steps", leave=False)
+    for step in pbar_local:
         # Get the next batch of data for the current client
         batch = fed_ds.next_client_batch(client_id)
         batch = {k: v.to(DEVICE) for k, v in batch.items()}
@@ -116,6 +120,8 @@ def client_round_train(model, train_params, client_train_params_dict, client_opt
 
         # Accumulate the loss
         training_loss += loss.item()
+        if (step + 1) % 10 == 0: # Update postfix every 10 steps to reduce overhead
+            pbar_local.set_postfix({"batch_loss": f"{loss.item():.4f}"})
 
     # Copy the updated model parameters back to the client's parameter set
     copy_parameters(

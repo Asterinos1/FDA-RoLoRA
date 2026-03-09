@@ -330,8 +330,9 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
     # Partition the dataset into federated datasets
     client_datasets = federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha)
 
-    # Load the tokenizer
-    if checkpoint == 'microsoft/deberta-v3-base':
+    # Load the tokenizer, updated for other models too
+    # if checkpoint == 'microsoft/deberta-v3-base':
+    if checkpoint in ['microsoft/deberta-v3-base', 'prajjwal1/bert-tiny']:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
     else:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint)

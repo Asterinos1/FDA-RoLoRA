@@ -1,6 +1,9 @@
 import gc
+from tqdm import tqdm
 
-from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
+
+# from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
+from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters, \
     get_updated_client_parameters, variance, compute_metrics, stop_training_with_threshold
@@ -26,7 +29,9 @@ def fed_opt(hyperparams):
         hyperparams['checkpoint'],
         hyperparams['num_clients'],
         hyperparams['alpha'],
-        hyperparams['batch_size']
+        hyperparams['batch_size'],
+        hyperparams.get('num_workers', 0),
+        hyperparams.get('pin_memory', False)
     )
 
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -53,12 +58,15 @@ def fed_opt(hyperparams):
     # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the SAVE_DEVICE
     client_train_params_dict = {
         client_id: [param.detach().clone().to(SAVE_DEVICE) for param in round_start_train_params]
-        for client_id in range(hyperparams['clients_per_round'])
+        # for client_id in range(hyperparams['clients_per_round'])
+        # small error here
+        for client_id in range(hyperparams['num_clients'])
     }
 
     metrics_handler = MetricsHandler(hyperparams)
 
-    for r in range(hyperparams['total_rounds']):
+    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="Standard Federated Training")
+    for r in pbar_rounds:
 
         training_loss = 0.0
 
@@ -75,11 +83,13 @@ def fed_opt(hyperparams):
         # Calculate the total number of steps for this epoch/round
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
 
-        for client_id in sampled_clients:
-            training_loss += client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds, client_id, round_steps)
+        pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} Clients", leave=False)
+        for client_id in pbar_clients:
+            loss = client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds, client_id, round_steps)
+            training_loss += loss
+            pbar_clients.set_postfix({"client_id": client_id})
 
-        # Reset the model parameters to the parameters at the start of the round. This ensures that the
-        # server-side optimizer updates are applied correctly (on the parameters at the start of the round)
+        # Reset the model parameters to the parameters at the start of the round.
         copy_parameters(
             from_params=round_start_train_params,
             to_params=train_params
@@ -111,7 +121,7 @@ def fed_opt(hyperparams):
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
 
-        print(metrics)
+        pbar_rounds.set_postfix({"loss": f"{metrics['training_loss']:.4f}", "var": f"{metrics['variance']:.4e}"})
 
         gc.collect()
 
