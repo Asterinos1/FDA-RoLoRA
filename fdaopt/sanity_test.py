@@ -18,6 +18,8 @@ from training.fda_opt import fda_opt
 from training.fed_opt import fed_opt
 from training.fed_lora_opt import fed_lora_opt
 from training.fda_lora_opt import fda_lora_opt
+from training.fed_sa_lora_opt import fed_sa_lora_opt
+from training.fda_sa_lora_opt import fda_sa_lora_opt
 
 # Configuration for a fast "Tiny" run
 # TEST_HYPERPARAMS = {
@@ -70,7 +72,9 @@ TEST_HYPERPARAMS = {
     'lora_r': 4,                        
     'lora_alpha': 8,
     # 'target_modules': ["query", "value"] 
-    'target_modules': ("query", "value") 
+    'target_modules': ("query", "value") ,
+    # Toggle this to True or False to test the respective logic branches
+    'include_b_in_variance': True
 }
 
 def run_test(name, func):
@@ -100,5 +104,8 @@ if __name__ == "__main__":
     run_test("FedLoRA-Opt", fed_lora_opt)
     run_test("FDA-Opt", fda_opt)
     run_test("FDA-LoRA-Opt", fda_lora_opt)
+    run_test("FedSA-LoRA-Opt", fed_sa_lora_opt)
+    run_test(f"FDA-SA-LoRA-Opt, B included from variance", lambda hp: fda_sa_lora_opt({**hp, 'include_b_in_variance': True}))
+    run_test(f"FDA-SA-LoRA-Opt, B excluded from variance", lambda hp: fda_sa_lora_opt({**hp, 'include_b_in_variance': False}))
 
     print("\nAll tests completed. Check your console for round metrics and variance logs.")
