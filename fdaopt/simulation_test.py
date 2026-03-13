@@ -31,9 +31,9 @@ BASE_HYPERPARAMS = {
     'total_rounds': 20,                  
     'local_epochs': 1,
     'max_epochs': 3,                     
-    'batch_size': 32,                    
-    'num_workers': 4,                    
-    'pin_memory': True,    
+    'batch_size': 16,                    
+    'num_workers': 0,                    
+    'pin_memory': False,    
     'alpha': 0.5,                        
     'server_opt_name': 'AdamW',
     'server_opt_lr': 5e-4,
@@ -43,7 +43,7 @@ BASE_HYPERPARAMS = {
     'threshold': False,
     'lora_r': 8,                         
     'lora_alpha': 16,
-    'target_modules': ["q_lin", "v_lin"], # DistilBERT specific attention layers
+    'target_modules': ("q_lin", "v_lin"), # DistilBERT specific attention layers
     'include_b_in_variance': True
 }
 
