@@ -1,100 +1,89 @@
-import time
-import logging
+import sys
+import os
+import torch
+import gc
+from huggingface_hub import login
 
-from fdaopt.training.fed_opt import fed_opt
-from fdaopt.training.fda_opt import fda_opt
-from fdaopt.training.fed_lora_opt import fed_lora_opt
-from fdaopt.training.fda_lora_opt import fda_lora_opt
-from fdaopt.training.fed_sa_lora_opt import fed_sa_lora_opt
-from fdaopt.training.fda_sa_lora_opt import fda_sa_lora_opt
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+from training.fda_opt import fda_opt
+from training.fed_opt import fed_opt
+from training.fed_lora_opt import fed_lora_opt
+from training.fda_lora_opt import fda_lora_opt
+from training.fed_sa_lora_opt import fed_sa_lora_opt
+from training.fda_sa_lora_opt import fda_sa_lora_opt
 
-def run_simulation(method_name, opt_function, config):
-    """
-    Executes a federated learning simulation for a given method and configuration.
-    """
-    logger.info(f"--- Starting Simulation: {method_name} ---")
-    start_time = time.time()
-    
-    try:
-        opt_function(config)
-    except Exception as e:
-        logger.error(f"Simulation failed for {method_name} with error: {str(e)}")
-        raise
-        
-    elapsed_time = time.time() - start_time
-    logger.info(f"--- Completed {method_name} in {elapsed_time:.2f} seconds ---\n")
+try:
+    from lol import HF_TOKEN
+    login(token=HF_TOKEN)
+except ImportError:
+    print("HF_TOKEN not found in lol.py; proceeding without login.")
 
-def main():
+# currently for testing on my laptop
+BASE_HYPERPARAMS = {
+    'checkpoint': "distilbert-base-uncased", 
+    'use_fast_tokenizer': True,
+    'ds_path': "glue",                  
+    'ds_name': "sst2",                  
+    'num_labels': 2,
+    'num_clients': 12,                  
+    'clients_per_round': 3,              
+    'total_rounds': 20,                  
+    'local_epochs': 1,
+    'max_epochs': 3,                     
+    'batch_size': 32,                    
+    'num_workers': 4,                    
+    'pin_memory': True,    
+    'alpha': 0.5,                        
+    'server_opt_name': 'AdamW',
+    'server_opt_lr': 5e-4,
+    'client_opt_name': 'SGD',
+    'client_opt_lr': 1e-2,
+    'theta': 0.05,                       
+    'threshold': False,
+    'lora_r': 8,                         
+    'lora_alpha': 16,
+    'target_modules': ["q_lin", "v_lin"], # DistilBERT specific attention layers
+    'include_b_in_variance': True
+}
+
+def run_performance_suite(selected_methods=None):
     """
-    Main execution block defining hyperparameters and triggering the simulations.
+    Runs a series of tests and cleans up VRAM between each to prevent OOM.
     """
-    
-    # Common parameters across all experiments
-    common_params = {
-        'checkpoint': 'roberta-base',
-        'ds_path': 'glue',
-        'ds_name': 'mrpc',
-        'num_labels': 2,
-        'num_clients': 10,
-        'clients_per_round': 4,
-        'total_rounds': 20,
-        'local_epochs': 3,
-        'batch_size': 16,
-        'alpha': 1.0,           
-        'lr_server': 1.0,       
-        'weight_decay': 0.01,
-        'num_workers': 2,
-        'pin_memory': True,
-        'threshold': True       
+    methods = {
+        "Fed-Opt": fed_opt,
+        "FedLoRA": fed_lora_opt,
+        "FDA-LoRA": fda_lora_opt,
+        "FedSA-LoRA": fed_sa_lora_opt,
+        "FDA-SA-LoRA": fda_sa_lora_opt
     }
 
-    # Configuration for Full Fine-Tuning methods
-    full_ft_config = common_params.copy()
-    full_ft_config.update({
-        'lr_client': 2e-5, # Lower learning rate required for full parameter tuning
-        'theta': 0.05,
-        'max_epochs': 10
-    })
+    if selected_methods:
+        methods = {k: v for k, v in methods.items() if k in selected_methods}
 
-    # Configuration for LoRA-based methods
-    lora_config = common_params.copy()
-    lora_config.update({
-        'lora_r': 8,
-        'lora_alpha': 16,
-        'target_modules': ['query', 'value'], 
-        'lr_client': 2e-4, # Higher learning rate typical for PEFT
-        'theta': 0.05,
-        'max_epochs': 10
-    })
-
-    # FDA-SA-LoRA specific configurations
-    fda_sa_lora_a_only = lora_config.copy()
-    fda_sa_lora_a_only['include_b_in_variance'] = False
-
-    fda_sa_lora_a_and_b = lora_config.copy()
-    fda_sa_lora_a_and_b['include_b_in_variance'] = True
-
-    logger.info("Initializing Federated Simulations Pipeline...")
-
-    # 1. Full Fine-Tuning Baselines
-    run_simulation("FedAvg (Full Fine-Tuning)", fed_opt, full_ft_config)
-    run_simulation("FDA (Full Fine-Tuning)", fda_opt, full_ft_config)
-
-    # 2. Standard LoRA Baselines
-    run_simulation("Fed-LoRA", fed_lora_opt, lora_config)
-    run_simulation("FDA-LoRA", fda_lora_opt, lora_config)
-
-    # 3. Shared-A LoRA Methods
-    run_simulation("Fed-SA-LoRA", fed_sa_lora_opt, lora_config)
-    run_simulation("FDA-SA-LoRA (A-Only Variance)", fda_sa_lora_opt, fda_sa_lora_a_only)
-    run_simulation("FDA-SA-LoRA (A+B Variance)", fda_sa_lora_opt, fda_sa_lora_a_and_b)
+    print(f"System Check: GPU - {torch.cuda.get_device_name(0)}")
+    print(f"Total Rounds: {BASE_HYPERPARAMS['total_rounds']}")
+    
+    for name, func in methods.items():
+        print(f"\n{'#'*30}")
+        print(f"RUNNING EXPERIMENT: {name}")
+        print(f"{'#'*30}")
+        
+        hp = BASE_HYPERPARAMS.copy()
+        hp['method'] = name
+        
+        try:
+            func(hp)
+            print(f"COMPLETED: {name}")
+        except Exception as e:
+            print(f"CRASHED: {name} with error: {e}")
+        finally:
+            # Crucial for laptop with 8GB VRAM: Clear memory between runs
+            gc.collect()
+            torch.cuda.empty_cache()
 
 if __name__ == "__main__":
-    main()
+    # You can pass a list of specific methods to run just one or two
+    # run_performance_suite(["FDA-LoRA", "FDA-SA-LoRA"])
+    run_performance_suite()
