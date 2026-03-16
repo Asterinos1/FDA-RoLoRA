@@ -14,12 +14,12 @@ except Exception as e:
     print(f"Auth failed: {e}. Downloads might be throttled.")
 
 import torch
-from training.fda_opt import fda_opt
-from training.fed_opt import fed_opt
-from training.fed_lora_opt import fed_lora_opt
-from training.fda_lora_opt import fda_lora_opt
-from training.fed_sa_lora_opt import fed_sa_lora_opt
-from training.fda_sa_lora_opt import fda_sa_lora_opt
+from training.fda_opt import fda_opt, fda_lora_opt, fda_sa_lora_opt
+from training.fed_opt import fed_opt, fed_lora_opt, fed_sa_lora_opt
+# from training.fed_lora_opt import fed_lora_opt
+# from training.fda_lora_opt import fda_lora_opt
+# from training.fed_sa_lora_opt import fed_sa_lora_opt
+# from training.fda_sa_lora_opt import fda_sa_lora_opt
 
 # Configuration for a fast "Tiny" run
 # TEST_HYPERPARAMS = {
@@ -96,7 +96,6 @@ def run_test(name, func):
         print(f"\nFAILED: {name} encountered an error: {e}")
 
 if __name__ == "__main__":
-    
     print(f"System Check: Using {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'}")
 
     # Run tests sequentially
@@ -105,7 +104,10 @@ if __name__ == "__main__":
     run_test("FDA-Opt", fda_opt)
     run_test("FDA-LoRA-Opt", fda_lora_opt)
     run_test("FedSA-LoRA-Opt", fed_sa_lora_opt)
-    run_test(f"FDA-SA-LoRA-Opt, B included from variance", lambda hp: fda_sa_lora_opt({**hp, 'include_b_in_variance': True}))
-    run_test(f"FDA-SA-LoRA-Opt, B excluded from variance", lambda hp: fda_sa_lora_opt({**hp, 'include_b_in_variance': False}))
+    run_test(f"FDA-SA-LoRA-Opt, B included from variance", lambda hp: fda_sa_lora_opt({**hp, 'include_b_in_variance': False}))
+    
+    # B should be excluded from variance calculation but I will leave this inside just for seeing
+    # how it affects the logs and metrics. 
+    run_test(f"FDA-SA-LoRA-Opt, B excluded from variance", lambda hp: fda_sa_lora_opt({**hp, 'include_b_in_variance': True}))
 
     print("\nAll tests completed. Check your console for round metrics and variance logs.")
