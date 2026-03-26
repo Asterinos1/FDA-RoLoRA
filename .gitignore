@@ -211,3 +211,5 @@ venv/
 fdaopt/lol.py
 manual.txt
 results/round_metrics/*.csv
+TODO.txt
+superorganizer.py

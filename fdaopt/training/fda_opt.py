@@ -296,19 +296,28 @@ def fda_sa_lora_opt(hyperparams):
     INCLUDE_B_IN_VARIANCE = hyperparams.get('include_b_in_variance', False)
 
     fed_ds, test_ds = prepare_federated_datasets(
-        hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
-        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
-        hyperparams.get('num_workers', 0), hyperparams.get('pin_memory', False)
+        hyperparams['ds_path'], 
+        hyperparams['ds_name'], 
+        hyperparams['checkpoint'],
+        hyperparams['num_clients'], 
+        hyperparams['alpha'], 
+        hyperparams['batch_size'],
+        hyperparams.get('num_workers', 0), 
+        hyperparams.get('pin_memory', False)
     )
 
     base_model = AutoModelForSequenceClassification.from_pretrained(
-        hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
+        hyperparams['checkpoint'], 
+        num_labels=hyperparams['num_labels']
     )
 
     peft_config = LoraConfig(
-        task_type=TaskType.SEQ_CLS, inference_mode=False, 
-        r=hyperparams.get('lora_r', 8), lora_alpha=hyperparams.get('lora_alpha', 16),
-        lora_dropout=0.1, target_modules=hyperparams.get('target_modules', None)
+        task_type=TaskType.SEQ_CLS, 
+        inference_mode=False, 
+        r=hyperparams.get('lora_r', 8), 
+        lora_alpha=hyperparams.get('lora_alpha', 16),
+        lora_dropout=0.1, 
+        target_modules=hyperparams.get('target_modules', None)
     )
 
     model = get_peft_model(base_model, peft_config)
@@ -434,5 +443,166 @@ def fda_sa_lora_opt(hyperparams):
         if hyperparams.get('threshold'):
             if stop_training_with_threshold(hyperparams, metrics): 
                 break
+
+    metrics_handler.save_metrics()
+
+#rolora helper function to toggle A and B matrices
+def toggle_rolora_matrices(model, active_matrix):
+    """
+    Dynamically freezes and unfreezes LoRA A and B matrices.
+    active_matrix: 'A' or 'B'
+    """
+    for name, param in model.named_parameters():
+        if 'lora_A' in name:
+            param.requires_grad = (active_matrix == 'A')
+        elif 'lora_B' in name:
+            param.requires_grad = (active_matrix == 'B')
+
+#rolora version of FDA-Opt
+def fda_rolora_opt(hyperparams):
+    USE_AMSSKETCH = True 
+    MAX_CONSECUTIVE_ROUNDS = hyperparams.get('max_consecutive_rounds', 2)
+
+    fed_ds, test_ds = prepare_federated_datasets(
+        hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
+        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
+        hyperparams.get('num_workers', 0), hyperparams.get('pin_memory', False)
+    )
+
+    base_model = AutoModelForSequenceClassification.from_pretrained(
+        hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
+    )
+
+    peft_config = LoraConfig(
+        task_type=TaskType.SEQ_CLS, inference_mode=False, 
+        r=hyperparams.get('lora_r', 8), lora_alpha=hyperparams.get('lora_alpha', 16),
+        lora_dropout=0.1, target_modules=hyperparams.get('target_modules', None)
+    )
+
+    model = get_peft_model(base_model, peft_config)
+    model = model.to(DEVICE)
+
+    params_A = [p for n, p in model.named_parameters() if 'lora_A' in n and p.requires_grad]
+    params_B = [p for n, p in model.named_parameters() if 'lora_B' in n and p.requires_grad]
+    params_other = [p for n, p in model.named_parameters() if 'lora_' not in n and p.requires_grad]
+
+    group_A = params_A + params_other
+    group_B = params_B + params_other
+    
+    len_A = len(params_A)
+    len_B = len(params_B)
+
+    server_opt_A, _ = server_client_optimizers(group_A, hyperparams)
+    server_opt_B, _ = server_client_optimizers(group_B, hyperparams)
+
+    client_sampler = ClientSampler(list(range(hyperparams['num_clients'])), hyperparams['clients_per_round'])
+
+    client_dict_A = {
+        client_id: [param.detach().clone().to(SAVE_DEVICE) for param in group_A]
+        for client_id in range(hyperparams['num_clients'])
+    }
+    client_dict_B = {
+        client_id: [param.detach().clone().to(SAVE_DEVICE) for param in group_B]
+        for client_id in range(hyperparams['num_clients'])
+    }
+
+    ams_sketch = AmsSketch() if USE_AMSSKETCH else None
+    metrics_handler = MetricsHandler(hyperparams)
+
+    theta = hyperparams['theta']
+    first_round = True
+    
+    var_history = {'A': float('inf'), 'B': float('inf')} 
+    consecutive_counts = {'A': 0, 'B': 0}
+
+    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="FDA-RoLoRA Alt2 Rounds")
+    for r in pbar_rounds:
+        
+        if (var_history['A'] >= var_history['B'] and consecutive_counts['A'] < MAX_CONSECUTIVE_ROUNDS) or consecutive_counts['B'] >= MAX_CONSECUTIVE_ROUNDS:
+            active_matrix = 'A'
+            consecutive_counts['A'] += 1
+            consecutive_counts['B'] = 0
+        else:
+            active_matrix = 'B'
+            consecutive_counts['B'] += 1
+            consecutive_counts['A'] = 0
+
+        toggle_rolora_matrices(model, active_matrix)
+
+        active_params = group_A if active_matrix == 'A' else group_B
+        active_server_opt = server_opt_A if active_matrix == 'A' else server_opt_B
+        active_client_dict = client_dict_A if active_matrix == 'A' else client_dict_B
+        active_lora_len = len_A if active_matrix == 'A' else len_B
+
+        _, client_opt = server_client_optimizers(active_params, hyperparams)
+        round_start_active_params = [param.detach().clone() for param in active_params]
+
+        training_loss = 0.0
+        sampled_clients = client_sampler.sample()
+
+        copy_parameters(from_params=active_params, to_params=round_start_active_params)
+        
+        active_client_dict = get_updated_client_parameters(
+            active_client_dict, sampled_clients, round_start_active_params
+        )
+
+        round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
+        var_approx = 0.0
+        round_epochs = 0
+
+        while var_approx <= theta and round_epochs < hyperparams['max_epochs']:
+            round_epochs += 1
+            
+            pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} | Epoch {round_epochs} | {active_matrix} Active", leave=False)
+            for client_id in pbar_clients:
+                training_loss += client_round_train(
+                    model, active_params, active_client_dict, 
+                    client_opt, fed_ds, client_id, round_steps
+                )
+
+            # Compute full drifts for aggregation
+            client_drifts = compute_client_drifts(round_start_active_params, active_client_dict)
+            
+            # Filter out params_other to evaluate variance ONLY on LoRA pathways
+            lora_only_drifts = {
+                client_id: drifts[:active_lora_len] 
+                for client_id, drifts in client_drifts.items()
+            }
+
+            if USE_AMSSKETCH:
+                var_approx = fda_variance_approx(lora_only_drifts, ams_sketch=ams_sketch)
+            else:
+                var_approx, _, _ = variance(lora_only_drifts)
+
+            if first_round:
+                first_round = False
+                break
+
+        var_history[active_matrix] = var_approx
+
+        training_loss = training_loss / round_epochs
+        copy_parameters(from_params=round_start_active_params, to_params=active_params)
+        
+        # Apply pseudo-gradients to ALL active parameters (LoRA + Head)
+        pseudo_gradients = compute_pseudo_gradients(client_drifts)
+        set_gradients(active_params, pseudo_gradients)
+        
+        active_server_opt.step()
+        active_server_opt.zero_grad()
+
+        metrics = {"round": r + 1, "active_matrix": active_matrix} | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
+        metrics['training_loss'] = training_loss / hyperparams['clients_per_round']
+        
+        # Log variance using the filtered drifts
+        metrics['variance'], metrics['avg_norm_sq_drifts'], metrics['norm_sq_avg_drift'] = variance(lora_only_drifts)
+        
+        metrics['round_steps'] = round_epochs * round_steps
+        metrics_handler.append_round_metrics(metrics)
+
+        theta = ((hyperparams['max_epochs'] / 2) / round_epochs) * metrics['variance']
+        gc.collect()
+
+        if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics): 
+            break
 
     metrics_handler.save_metrics()
