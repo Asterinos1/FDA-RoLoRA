@@ -1,4 +1,5 @@
 from fdaopt.utils import torch, evaluate, DEVICE, DEVICE_RAM_PROGRAM
+import math
 
 # Let all clients models utilize C amount of RAM, then,
 SAVE_DEVICE = None
@@ -266,6 +267,68 @@ def vectorize(parameters):
 
     #return torch.cat([param.view(-1) for param in parameters])
 
+# LinearFDA from FedL-Sync-FDA repo.
+@torch.no_grad()
+def get_ksi_unit(w_t0, w_tminus1, generator=None):
+    """
+    Calculates the heuristic unit vector (ksi) as a list of tensors 
+    matching the model's parameter structure, avoiding huge allocations.
+    """
+    ksi_tensors = []
+    total_norm_sq = 0.0
+
+    if w_tminus1 is None:
+        # Round 1: Generate random structure matching w_t0
+        for param in w_t0:
+            rand_tensor = torch.randn_like(param, device=DEVICE, generator=generator)
+            ksi_tensors.append(rand_tensor)
+            total_norm_sq += torch.sum(rand_tensor ** 2).item()
+    else:
+        # Subsequent rounds: Calculate exact differences
+        for p_t0, p_tminus1 in zip(w_t0, w_tminus1):
+            diff = p_t0.to(DEVICE) - p_tminus1.to(DEVICE)
+            ksi_tensors.append(diff)
+            total_norm_sq += torch.sum(diff ** 2).item()
+            
+    norm = math.sqrt(total_norm_sq)
+    
+    # Normalize in-place to avoid extra allocations
+    if norm > 0.0:
+        for ksi_tensor in ksi_tensors:
+            ksi_tensor.div_(norm)
+            
+    return ksi_tensors
+
+
+@torch.no_grad()
+def linear_variance_approx(client_drifts, ksi_vector):
+    """
+    Computes variance approximation iteratively without vectorizing,
+    saving significant VRAM and preventing memory fragmentation.
+    """
+    norm_sq_drifts = []
+    dot_products = [] 
+    
+    for drifts in client_drifts.values():
+        norm_sq_drift = 0.0
+        dot_product = 0.0
+        
+        # Calculate dot products and norms layer-by-layer
+        for drift_param, ksi_param in zip(drifts, ksi_vector):
+            drift_param = drift_param.to(DEVICE)
+            
+            # Use .item() immediately to keep memory usage entirely flat
+            norm_sq_drift += torch.sum(drift_param ** 2).item()
+            dot_product += torch.sum(drift_param * ksi_param).item()
+            
+        norm_sq_drifts.append(norm_sq_drift)
+        dot_products.append(dot_product)
+
+    # Standard python float math since values are already extracted via .item()
+    S_1 = sum(norm_sq_drifts) / len(norm_sq_drifts)
+    S_2 = sum(dot_products) / len(dot_products)
+    
+    return S_1 - (S_2 ** 2)
 
 @torch.no_grad
 def variance(client_drifts):
