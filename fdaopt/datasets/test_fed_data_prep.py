@@ -341,7 +341,7 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
 
     # --- HARDCODED LIMIT FOR RAPID LOCAL TESTING ---
     # Keep this number small (e.g., 100-500) for instant sanity checks
-    MAX_SAMPLES = 100 
+    MAX_SAMPLES = 40000 
 
     train_limit = min(len(raw_train_dataset), MAX_SAMPLES)
     raw_train_dataset = raw_train_dataset.select(range(train_limit))

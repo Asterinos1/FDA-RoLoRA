@@ -1,12 +1,11 @@
 import gc
 import torch
-from tqdm import tqdm
 # including LoRA imports
 from peft import get_peft_model, LoraConfig, TaskType
 from fdaopt.training.fed_train import sa_client_round_train
 
-# from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
-from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler
+from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
+# from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import (compute_client_drifts, compute_drifts, compute_pseudo_gradients, set_gradients, copy_parameters,
     get_updated_client_parameters, variance, compute_metrics, fda_variance_approx, stop_training_with_threshold)
@@ -75,8 +74,7 @@ def fda_opt(hyperparams):
     theta = hyperparams['theta']
     first_round = True
 
-    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="FDA Federated Training")
-    for r in pbar_rounds:
+    for r in range(hyperparams['total_rounds']):
 
         training_loss = 0.0
 
@@ -101,18 +99,14 @@ def fda_opt(hyperparams):
 
             round_epochs += 1
             
-            pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} | Epoch {round_epochs}", leave=False)
-            for client_id in pbar_clients:
+            for client_id in sampled_clients:
                 training_loss += client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds,
                                                     client_id, round_steps)
-                pbar_clients.set_postfix({"client_id": client_id})
 
             # Compute the drifts (differences) between the round start parameters and the client parameters
             client_drifts = compute_client_drifts(round_start_train_params, client_train_params_dict)
             # Calculate the current variance approximation with LinearFDA
             var_approx = fda_variance_approx(client_drifts, ams_sketch=ams_sketch)
-
-            pbar_rounds.set_postfix({"var": f"{var_approx:.4e}", "theta": f"{theta:.4e}"})
 
             if first_round:
                 first_round = False
@@ -229,8 +223,7 @@ def fda_rolora_opt(hyperparams):
     var_history = {'A': float('inf'), 'B': float('inf')} 
     consecutive_counts = {'A': 0, 'B': 0}
 
-    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="FDA-RoLoRA Alt2 Rounds")
-    for r in pbar_rounds:
+    for r in range(hyperparams['total_rounds']):
         
         if (var_history['A'] >= var_history['B'] and consecutive_counts['A'] < MAX_CONSECUTIVE_ROUNDS) or consecutive_counts['B'] >= MAX_CONSECUTIVE_ROUNDS:
             active_matrix = 'A'
@@ -267,8 +260,7 @@ def fda_rolora_opt(hyperparams):
         while var_approx <= theta and round_epochs < hyperparams['max_epochs']:
             round_epochs += 1
             
-            pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} | Epoch {round_epochs} | {active_matrix} Active", leave=False)
-            for client_id in pbar_clients:
+            for client_id in sampled_clients:
                 training_loss += client_round_train(
                     model, active_params, active_client_dict, 
                     client_opt, fed_ds, client_id, round_steps

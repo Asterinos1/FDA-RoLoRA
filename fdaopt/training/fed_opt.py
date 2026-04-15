@@ -1,11 +1,10 @@
 import gc
-from tqdm import tqdm
 # including LoRA imports
 from peft import get_peft_model, LoraConfig, TaskType
 from fdaopt.training.fed_train import sa_client_round_train
 
-# from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
-from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler
+from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
+# from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import average_client_parameters, compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters, \
     get_updated_client_parameters, variance, compute_metrics, stop_training_with_threshold
@@ -67,8 +66,7 @@ def fed_opt(hyperparams):
 
     metrics_handler = MetricsHandler(hyperparams)
 
-    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="Standard Federated Training")
-    for r in pbar_rounds:
+    for r in range(hyperparams['total_rounds']):
 
         training_loss = 0.0
 
@@ -85,11 +83,9 @@ def fed_opt(hyperparams):
         # Calculate the total number of steps for this epoch/round
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
 
-        pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} Clients", leave=False)
-        for client_id in pbar_clients:
+        for client_id in sampled_clients:
             loss = client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds, client_id, round_steps)
             training_loss += loss
-            pbar_clients.set_postfix({"client_id": client_id})
 
         # Reset the model parameters to the parameters at the start of the round.
         copy_parameters(
@@ -122,8 +118,6 @@ def fed_opt(hyperparams):
         metrics['round_steps'] = round_steps
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
-
-        pbar_rounds.set_postfix({"loss": f"{metrics['training_loss']:.4f}", "var": f"{metrics['variance']:.4e}"})
 
         gc.collect()
 
@@ -158,8 +152,8 @@ def fedavg_rolora(hyperparams):
     # Prepare the federated datasets (Dirichlet distribution) and the centralized test dataset
     fed_ds, test_ds = prepare_federated_datasets(
         hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
-        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
-        hyperparams.get('num_workers', 0), hyperparams.get('pin_memory', False)
+        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size']
+        # hyperparams.get('num_workers', 0), hyperparams.get('pin_memory', False)
     )
 
     # Load the base pre-trained sequence classification model
@@ -214,15 +208,16 @@ def fedavg_rolora(hyperparams):
     # Initialize the metrics handler to log results per round
     metrics_handler = MetricsHandler(hyperparams)
 
-    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="FedAvg-RoLoRA Training (Strict Theory)")
-    
     # Begin the main federated learning communication rounds
-    for r in pbar_rounds:
+    for r in range(hyperparams['total_rounds']):
         training_loss = 0.0
         sampled_clients = client_sampler.sample()
 
         # Alternate the active matrix: Round 0 -> B, Round 1 -> A, Round 2 -> B, etc.
         active_matrix = 'B' if r % 2 == 0 else 'A'
+        
+        # Debugging print to indicate current state
+        print(f"Starting Round {r+1} | Active Matrix: {active_matrix}")
         
         # Apply the freezing/unfreezing logic to the model based on the active matrix
         toggle_rolora_matrices(model, active_matrix)
@@ -246,10 +241,8 @@ def fedavg_rolora(hyperparams):
         # Calculate how many total steps (batches) constitute the local epochs for this round
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
 
-        pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} ({active_matrix} Active)", leave=False)
-
         # Execute local training sequentially on the server simulation for each sampled client
-        for client_id in pbar_clients:
+        for client_id in sampled_clients:
             loss = client_round_train(
                 model, active_params, active_client_dict,
                 client_opt, fed_ds, client_id, round_steps
@@ -342,8 +335,7 @@ def fed_rolora_opt(hyperparams):
 
     metrics_handler = MetricsHandler(hyperparams)
 
-    pbar_rounds = tqdm(range(hyperparams['total_rounds']), desc="Fed-RoLoRA Alt2 Training")
-    for r in pbar_rounds:
+    for r in range(hyperparams['total_rounds']):
         training_loss = 0.0
         sampled_clients = client_sampler.sample()
         
@@ -366,8 +358,7 @@ def fed_rolora_opt(hyperparams):
 
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
 
-        pbar_clients = tqdm(sampled_clients, desc=f"  Round {r+1} ({active_matrix} Active)", leave=False)
-        for client_id in pbar_clients:
+        for client_id in sampled_clients:
             loss = client_round_train(
                 model, active_params, active_client_dict, 
                 client_opt, fed_ds, client_id, round_steps
