@@ -208,7 +208,7 @@ __marimo__/
 
 # extras
 venv/
-fdaopt/lol.py
+fdaopt/env.py
 manual.txt
 results/round_metrics/*.csv
 TODO.txt
