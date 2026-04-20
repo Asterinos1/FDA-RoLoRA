@@ -52,22 +52,51 @@ def run_fedavg_rolora_test():
 
     # --- Scaled Hyperparameters for Scientific Scenario ---
     # Designed for a ~1.5 hour run on RTX 4060
+    # hyperparams = {
+    #     'checkpoint': "roberta-base",
+    #     'ds_path': "glue",
+    #     'ds_name': "sst2",
+    #     'num_labels': 2,
+    #     'num_clients': 80,          # Reduced from 200 to speed up partitioning
+    #     'clients_per_round': 8,     # 10% participation (very standard)
+    #     'total_rounds': 100,         # Deep enough to show convergence trends
+    #     'local_epochs': 1,
+    #     'batch_size': 32,            # Stable for 16GB RAM
+    #     'num_workers': 0,            # Required for Win11
+    #     'pin_memory': False,
+    #     'alpha': 0.5,                # Keep the Non-IID complexity
+    #     'client_opt_name': 'SGD',
+    #     'client_opt_lr': 0.05,
+    #     'lora_r': 8,
+    #     'lora_alpha': 16,
+    #     'target_modules': ("query", "value"),
+    #     'fda': False,
+    #     'server_opt_name': 'None',
+    #     'server_opt_lr': 0.0,
+    #     'threshold': False
+    # }
+
+    # parameters more alinged with to the paper's main benchmarks
     hyperparams = {
-        'checkpoint': "roberta-base",
+        # 1. UPGRADE: Use the larger 355M parameter model from the paper
+        'checkpoint': "roberta-base", # "roberta-large", 
         'ds_path': "glue",
         'ds_name': "sst2",
         'num_labels': 2,
-        'num_clients': 80,          # Reduced from 200 to speed up partitioning
-        'clients_per_round': 8,     # 10% participation (very standard)
-        'total_rounds': 100,         # Deep enough to show convergence trends
+        # 2. UPGRADE: Set num_clients and clients_per_round to equal (Full Participation)
+        'num_clients': 50,      
+        'clients_per_round': 50, 
+        'total_rounds': 80,  # Keep rounds the same to observe convergence trends
         'local_epochs': 1,
-        'batch_size': 32,            # Stable for 16GB RAM
-        'num_workers': 0,            # Required for Win11
-        'pin_memory': False,
-        'alpha': 0.5,                # Keep the Non-IID complexity
+        'batch_size': 16,
+        'num_workers': 4,  # Increased workers for better data loading performance
+        'pin_memory': True, # Enable pin_memory for faster GPU data transfer
+        'alpha': 0.5,
         'client_opt_name': 'SGD',
-        'client_opt_lr': 0.05,
-        'lora_r': 8,
+        # 3. UPGRADE: Decrease LR to within the optimal range (1e-3 to 2e-2)
+        'client_opt_lr': 0.01,  
+        # 4. UPGRADE: Set rank to 4 per the paper's main benchmarks
+        'lora_r': 4,            
         'lora_alpha': 16,
         'target_modules': ("query", "value"),
         'fda': False,
