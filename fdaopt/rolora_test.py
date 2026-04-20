@@ -13,7 +13,9 @@ from fdaopt.training.fed_opt import fedavg_rolora
 def run_fedavg_rolora_test():
     print("Initializing Hardware Settings...")
 
-    utils.DEVICE_RAM_PROGRAM = 'moderate'
+    # utils.DEVICE_RAM_PROGRAM = 'moderate'
+    # this hasn't been tested yet, who knows what we will see?!
+    utils.DEVICE_RAM_PROGRAM = 'performance'
     
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     utils.set_device(device)

@@ -1,7 +1,6 @@
 import gc
 # including LoRA imports
 from peft import get_peft_model, LoraConfig, TaskType
-from fdaopt.training.fed_train import sa_client_round_train
 
 from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
 # from fdaopt.datasets.test_fed_data_prep import prepare_federated_datasets, ClientSampler

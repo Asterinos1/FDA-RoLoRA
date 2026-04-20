@@ -330,6 +330,75 @@ def linear_variance_approx(client_drifts, ksi_vector):
     
     return S_1 - (S_2 ** 2)
 
+# more accurate ksi to previous FedL-Sync-FDA
+def get_ksi_unit2(global_current, global_prev):
+    """
+    Generates the projection vector ksi as the normalized difference 
+    between the current and previous global models, avoiding tensor flattening.
+    """
+    ksi = {}
+    diff_norm_sq = 0.0
+    
+    for k in global_current.keys():
+        diff = global_current[k] - global_prev[k]
+        ksi[k] = diff
+        diff_norm_sq += torch.sum(diff ** 2).item()
+        
+    diff_norm = math.sqrt(diff_norm_sq)
+    
+    if diff_norm == 0.0:
+        rand_norm_sq = 0.0
+        for k in ksi.keys():
+            ksi[k] = torch.randn_like(ksi[k])
+            rand_norm_sq += torch.sum(ksi[k] ** 2).item()
+            
+        rand_norm = math.sqrt(rand_norm_sq)
+        for k in ksi.keys():
+            ksi[k] = ksi[k] / rand_norm
+    else:
+        for k in ksi.keys():
+            ksi[k] = ksi[k] / diff_norm
+            
+    return ksi
+
+def linear_variance_approx2(client_drifts, global_current, global_prev):
+    """
+    Memory-efficient 1:1 port of the FedL-Sync-FDA linear variance approximation.
+    
+    Args:
+        client_drifts: List of state_dicts (or dicts of tensors) representing Delta_i for each client.
+        global_current: state_dict of the current global model (w_t0).
+        global_prev: state_dict of the previous global model (w_tminus1).
+        
+    Returns:
+        float: The estimated variance.
+    """
+    ksi = get_ksi_unit2(global_current, global_prev)
+    
+    num_clients = len(client_drifts)
+    sum_sq_norms = 0.0
+    sum_dot_products = 0.0
+    
+    for delta_i in client_drifts:
+        client_sq_norm = 0.0
+        client_dot_product = 0.0
+        
+        for k in delta_i.keys():
+            drift_tensor = delta_i[k]
+            
+            client_sq_norm += torch.sum(drift_tensor ** 2).item()
+            client_dot_product += torch.sum(ksi[k] * drift_tensor).item()
+            
+        sum_sq_norms += client_sq_norm
+        sum_dot_products += client_dot_product
+        
+    mean_sq_norm = sum_sq_norms / num_clients
+    mean_dot_product = sum_dot_products / num_clients
+    
+    variance_approx = mean_sq_norm - (mean_dot_product ** 2)
+    
+    return variance_approx
+
 @torch.no_grad
 def variance(client_drifts):
     """
