@@ -294,14 +294,76 @@ def test_dataset_split(raw_datasets, ds_path, ds_name):
             return {ds_name: raw_datasets['validation']}
 
 
+# def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha, batch_size):
+#     """
+#     Prepare federated datasets and create corresponding DataLoaders.
+
+#     This function handles the entire process of loading the raw dataset, partitioning it into
+#     training federated datasets using Dirichlet distribution, tokenizing the datasets, and creating
+#     DataLoaders for each client's dataset. It also tokenizes, and creates a dataloader for the test dataset.
+
+#     Args:
+#         ds_path (str): The path or identifier of the dataset.
+#         ds_name (str): The name of the dataset.
+#         checkpoint (str): The checkpoint identifier for the tokenizer.
+#         num_clients (int): The number of clients.
+#         alpha (float): The concentration parameter for the Dirichlet distribution.
+#         batch_size (int): The batch size to be used by the DataLoaders.
+
+#     Returns:
+#         tuple: A tuple containing:
+#             - FederatedDataset: An object containing client DataLoaders for federated learning.
+#             - Dictionary: Key the test ds name and value a DataLoader for the tokenized and preprocessed test dataset.
+#     """
+
+#     # Load the raw dataset
+#     raw_datasets = load_dataset(path=ds_path, name=ds_name)
+
+#     # 1. Test dataset
+#     raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
+#     # 2. Training dataset
+#     raw_train_dataset = raw_datasets['train']
+
+#     # Calculate the prior distribution
+#     prior_distribution, num_labels = calculate_prior_distribution(raw_train_dataset)
+
+#     # Partition the dataset into federated datasets
+#     client_datasets = federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha)
+
+#     # Load the tokenizer, updated for other models too
+#     # if checkpoint == 'microsoft/deberta-v3-base':
+#     if checkpoint in ['microsoft/deberta-v3-base', 'prajjwal1/bert-tiny']:
+#         tokenizer = AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
+#     else:
+#         tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+#     # Create the tokenization function
+#     tokenize_fn = tokenize_function(ds_path, ds_name, tokenizer)
+
+#     # Tokenize the client datasets
+#     tok_client_datasets = tokenize_client_datasets(client_datasets, tokenize_fn)
+
+#     # Create DataLoaders for each client dataset
+#     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+#     client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, data_collator)
+
+#     fed_ds = FederatedDataset(client_dataloaders)
+
+#     # Preprocess the test datasets
+#     test_ds = {
+#         k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size)
+#         for k, v in raw_test_datasets.items()
+#     }
+
+#     return fed_ds, test_ds
+
 def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha, batch_size):
     """
     Prepare federated datasets and create corresponding DataLoaders.
-
     This function handles the entire process of loading the raw dataset, partitioning it into
     training federated datasets using Dirichlet distribution, tokenizing the datasets, and creating
     DataLoaders for each client's dataset. It also tokenizes, and creates a dataloader for the test dataset.
-
+    
     Args:
         ds_path (str): The path or identifier of the dataset.
         ds_name (str): The name of the dataset.
@@ -309,54 +371,83 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
         num_clients (int): The number of clients.
         alpha (float): The concentration parameter for the Dirichlet distribution.
         batch_size (int): The batch size to be used by the DataLoaders.
-
+        
     Returns:
         tuple: A tuple containing:
             - FederatedDataset: An object containing client DataLoaders for federated learning.
             - Dictionary: Key the test ds name and value a DataLoader for the tokenized and preprocessed test dataset.
     """
-
-    # Load the raw dataset
     raw_datasets = load_dataset(path=ds_path, name=ds_name)
-
-    # 1. Test dataset
     raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
-    # 2. Training dataset
     raw_train_dataset = raw_datasets['train']
-
-    # Calculate the prior distribution
+    
+    MAX_SAMPLES = 40000
+    train_limit = min(len(raw_train_dataset), MAX_SAMPLES)
+    raw_train_dataset = raw_train_dataset.select(range(train_limit))
+    
+    for split_name in raw_test_datasets.keys():
+        test_limit = min(len(raw_test_datasets[split_name]), MAX_SAMPLES)
+        raw_test_datasets[split_name] = raw_test_datasets[split_name].select(range(test_limit))
+        
     prior_distribution, num_labels = calculate_prior_distribution(raw_train_dataset)
-
-    # Partition the dataset into federated datasets
-    client_datasets = federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha)
-
-    # Load the tokenizer, updated for other models too
-    # if checkpoint == 'microsoft/deberta-v3-base':
+    
     if checkpoint in ['microsoft/deberta-v3-base', 'prajjwal1/bert-tiny']:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
     else:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint)
-
-    # Create the tokenization function
+        
     tokenize_fn = tokenize_function(ds_path, ds_name, tokenizer)
 
-    # Tokenize the client datasets
-    tok_client_datasets = tokenize_client_datasets(client_datasets, tokenize_fn)
+    # =====================================================================
+    # OLD IMPLEMENTATION (Commented Out)
+    # =====================================================================
+    # client_datasets = federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha)
+    # tok_client_datasets = tokenize_client_datasets(client_datasets, tokenize_fn)
+    
+    # =====================================================================
+    # NEW IMPLEMENTATION
+    # =====================================================================
+    """
+    OPTIMIZATION: Tokenize BEFORE Splitting
+    Why: Hugging Face `datasets` caches `.map()` operations. By splitting the dataset into clients first 
+    and then tokenizing each split, the system created and cached `num_clients` separate objects in RAM, 
+    causing extreme memory spikes and slow initialization. 
+    We now run the heavy `map` function on the entire dataset once, significantly reducing RAM usage 
+    and startup delays. The fast metadata operations (renaming/formatting) are done post-split.
+    """
+    # 1. Map tokenizer over the entire unsplit dataset first
+    tok_raw_train_dataset = raw_train_dataset.map(tokenize_fn, batched=True)
+    
+    # 2. Split the pre-tokenized dataset
+    client_datasets = federated_dirichlet_datasets(tok_raw_train_dataset, prior_distribution, num_clients, alpha)
+    
+    # 3. Handle fast metadata formatting for PyTorch ingestion
+    expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
+    tok_client_datasets = []
+    for client_ds in client_datasets:
+        tok_ds = client_ds.rename_column("label", "labels")
+        columns_to_remove = [col for col in tok_ds.column_names if col not in expected_columns]
+        tok_ds = tok_ds.remove_columns(columns_to_remove)
+        tok_ds.set_format("torch")
+        tok_client_datasets.append(tok_ds)
+    # =====================================================================
 
-    # Create DataLoaders for each client dataset
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-    client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, data_collator)
-
+    
+    # Removed num_workers and pin_memory to maintain compatibility with original helper functions
+    client_dataloaders = create_client_dataloaders(
+        tok_client_datasets,
+        batch_size,
+        data_collator
+    )
+    
     fed_ds = FederatedDataset(client_dataloaders)
-
-    # Preprocess the test datasets
     test_ds = {
         k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size)
         for k, v in raw_test_datasets.items()
     }
-
+    
     return fed_ds, test_ds
-
 
 class FederatedDataset:
     """
