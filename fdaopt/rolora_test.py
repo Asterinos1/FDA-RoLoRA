@@ -79,17 +79,18 @@ def run_fedavg_rolora_test():
     # parameters more alinged with to the paper's main benchmarks
     hyperparams = {
         # 1. UPGRADE: Use the larger 355M parameter model from the paper
-        'checkpoint': "roberta-base", # "roberta-large", 
+        'checkpoint': "roberta-large",  # approx 120m parameters
+        # "roberta-large", 
         'ds_path': "glue",
         'ds_name': "sst2",
         'num_labels': 2,
         # 2. UPGRADE: Set num_clients and clients_per_round to equal (Full Participation)
-        'num_clients': 50,      
-        'clients_per_round': 50, 
+        'num_clients': 30,      
+        'clients_per_round': 30, 
         'total_rounds': 80,  # Keep rounds the same to observe convergence trends
         'local_epochs': 1,
         'batch_size': 16,
-        'num_workers': 4,  # Increased workers for better data loading performance
+        'num_workers': 4,  
         'pin_memory': True, # Enable pin_memory for faster GPU data transfer
         'alpha': 0.5,
         'client_opt_name': 'SGD',
