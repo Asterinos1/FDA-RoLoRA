@@ -195,7 +195,8 @@ def get_ksi_unit(w_t0, w_tminus1, generator=None):
     total_norm_sq = 0.0
     if w_tminus1 is None:
         for param in w_t0:
-            rand_tensor = torch.randn_like(param, device=utils.DEVICE, generator=generator)
+            # Use torch.randn and pass shape/dtype explicitly since randn_like doesn't take generator
+            rand_tensor = torch.randn(param.shape, dtype=param.dtype, device=utils.DEVICE, generator=generator)
             ksi_tensors.append(rand_tensor)
             total_norm_sq += torch.sum(rand_tensor ** 2).item()
     else:
