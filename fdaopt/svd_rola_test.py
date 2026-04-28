@@ -14,7 +14,7 @@ def run_svd_sanity_comparison():
     print("Initializing Hardware Settings...")
     utils.DEVICE_RAM_PROGRAM = 'performance'
     
-    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
     utils.set_device(device)
     utils.set_seed(42)
     
