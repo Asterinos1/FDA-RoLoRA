@@ -126,11 +126,11 @@ def orchestrate():
                 with open(out_file, 'w') as stdout_f, open(err_file, 'w') as stderr_f:
                     subprocess.run(cmd, env=env, stdout=stdout_f, stderr=stderr_f, check=True)
                 duration = (time.time() - start_time) / 60
-                print(f"✅ SUCCESS: Finished in {duration:.2f} minutes.")
+                print(f"SUCCESS: Finished in {duration:.2f} minutes.")
             except subprocess.CalledProcessError:
-                print(f"❌ CRITICAL ERROR: Process crashed (likely OOM). Check {err_file} for stack trace.")
+                print(f"CRITICAL ERROR: Process crashed (likely OOM). Check {err_file} for stack trace.")
             except Exception as e:
-                print(f"⚠️ UNEXPECTED ERROR: {e}")
+                print(f"UNEXPECTED ERROR: {e}")
             finally:
                 # Wait for OS to completely reclaim VRAM before starting the next heavy iteration
                 time.sleep(5)
