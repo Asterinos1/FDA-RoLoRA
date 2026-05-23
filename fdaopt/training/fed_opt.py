@@ -95,78 +95,99 @@ def toggle_rolora_matrices(model, active_matrix):
 def fedavg_rolora(hyperparams):
     """
     Executes the FedAvg-RoLoRA federated training loop strictly adhering to the original paper's theory.
+    Updated to resolve client optimizer state bleeding and classification head representation whiplash.
     """
     fed_ds, test_ds = prepare_federated_datasets(
         hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
         hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
         hyperparams.get('num_workers', 4), hyperparams.get('pin_memory', True)
     )
+    
     base_model = AutoModelForSequenceClassification.from_pretrained(
         hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
     )
+    
     peft_config = LoraConfig(
         task_type=TaskType.SEQ_CLS, inference_mode=False,
         r=hyperparams.get('lora_r', 8), lora_alpha=hyperparams.get('lora_alpha', 16),
         lora_dropout=0.1, target_modules=hyperparams.get('target_modules', None)
     )
+    
     model = get_peft_model(base_model, peft_config)
     model = model.to(utils.DEVICE)
     
-    # BUG FIX: Do not forcibly freeze the classification head
     for name, param in model.named_parameters():
         pass
-
-    # BUG FIX: Include non-LoRA parameters (like the classification head) in the alternating groups
+        
     params_A = [p for n, p in model.named_parameters() if 'lora_A' in n and p.requires_grad]
     params_B = [p for n, p in model.named_parameters() if 'lora_B' in n and p.requires_grad]
     params_other = [p for n, p in model.named_parameters() if 'lora_' not in n and p.requires_grad]
     
     group_A = params_A + params_other
     group_B = params_B + params_other
-    
     len_A, len_B = len(params_A), len(params_B)
     
     client_opt_class = get_optimizer_class(hyperparams['client_opt_name'])
     client_opt_kwargs = get_opt_hyperparams('client', hyperparams)
+    
+    base_lr = client_opt_kwargs.get('lr', 0.01)
+    other_opt_kwargs = {k: v for k, v in client_opt_kwargs.items() if k != 'lr'}
+    
     client_sampler = ClientSampler(list(range(hyperparams['num_clients'])), hyperparams['clients_per_round'])
+    
     client_dict_A = {c_id: [param.detach().clone().to(get_save_device()) for param in group_A] for c_id in range(hyperparams['num_clients'])}
     client_dict_B = {c_id: [param.detach().clone().to(get_save_device()) for param in group_B] for c_id in range(hyperparams['num_clients'])}
+    
     metrics_handler = MetricsHandler(hyperparams)
     
     for r in range(hyperparams['total_rounds']):
         round_start_time = time.time()
         training_loss = 0.0
-        training_accuracy = 0.0 # NEW: Initialize accumulator
-        
+        training_accuracy = 0.0
         sampled_clients = client_sampler.sample()
+        
         active_matrix = 'B' if r % 2 == 0 else 'A'
         toggle_rolora_matrices(model, active_matrix)
+        
         active_params = group_A if active_matrix == 'A' else group_B
+        active_lora_params = params_A if active_matrix == 'A' else params_B
         active_client_dict = client_dict_A if active_matrix == 'A' else client_dict_B
         active_lora_len = len_A if active_matrix == 'A' else len_B
-        client_opt = client_opt_class(active_params, **client_opt_kwargs)
+        
         round_start_active_params = [param.detach().clone() for param in active_params]
         active_client_dict = get_updated_client_parameters(active_client_dict, sampled_clients, round_start_active_params)
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
         
         train_start = time.time()
+        
         for client_id in sampled_clients:
-            loss, acc = client_round_train(model, active_params, active_client_dict, client_opt, fed_ds, client_id, round_steps) # NEW: Unpack both
+            client_opt = client_opt_class([
+                {'params': active_lora_params, 'lr': base_lr},
+                {'params': params_other, 'lr': base_lr * 0.1}
+            ], **other_opt_kwargs)
+            
+            loss, acc = client_round_train(model, active_params, active_client_dict, client_opt, fed_ds, client_id, round_steps)
             training_loss += loss
-            training_accuracy += acc # NEW: Accumulate accuracy
+            training_accuracy += acc
             
         train_end = time.time()
         agg_start = time.time()
+        
         client_drifts = compute_client_drifts(round_start_active_params, active_client_dict)
         sampled_client_params = {c_id: active_client_dict[c_id] for c_id in sampled_clients}
         averaged_params = average_client_parameters(sampled_client_params)
+        
         with torch.no_grad():
             update_l2_norm = math.sqrt(sum(torch.sum((p_new.to(utils.DEVICE) - p_old.to(utils.DEVICE))**2).item()
                                            for p_new, p_old in zip(averaged_params, round_start_active_params)))
+                                           
         copy_parameters(from_params=averaged_params, to_params=active_params)
+        
         lora_only_drifts = {c_id: drifts[:active_lora_len] for c_id, drifts in client_drifts.items()}
+        
         agg_end = time.time()
         round_end_time = time.time()
+        
         metrics = {
             "method": "FedAvg-RoLoRA",
             "round": r + 1,
@@ -177,13 +198,16 @@ def fedavg_rolora(hyperparams):
             "update_l2_norm": update_l2_norm,
             "round_steps": round_steps
         } | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
+        
         metrics['training_loss'] = training_loss / hyperparams['clients_per_round']
-        metrics['training_accuracy'] = training_accuracy / hyperparams['clients_per_round'] # NEW: Log accuracy
+        metrics['training_accuracy'] = training_accuracy / hyperparams['clients_per_round']
         metrics['variance'], metrics['avg_norm_sq_drifts'], metrics['norm_sq_avg_drift'] = variance(lora_only_drifts)
         metrics_handler.append_round_metrics(metrics)
+        print(f"[{time.strftime('%H:%M:%S')}] Round {r + 1}/{hyperparams['total_rounds']} finished.")
         gc.collect()
         if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
             break
+            
     metrics_handler.save_metrics()
 
 def fedavg_rolora2(hyperparams):
@@ -417,6 +441,7 @@ def fed_lora_opt(hyperparams):
         metrics['training_accuracy'] = training_accuracy / hyperparams['clients_per_round'] # NEW: Log accuracy
         metrics['variance'], metrics['avg_norm_sq_drifts'], metrics['norm_sq_avg_drift'] = variance(client_drifts)
         metrics_handler.append_round_metrics(metrics)
+        print(f"[{time.strftime('%H:%M:%S')}] Round {r + 1}/{hyperparams['total_rounds']} finished.")
         gc.collect()
         if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
             break
