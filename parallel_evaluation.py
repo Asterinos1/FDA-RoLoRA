@@ -18,7 +18,7 @@ BASE_HYPERPARAMS = {
     'target_modules': ("query", "value"),
     'num_workers': 4,
     'pin_memory': True,
-    'threshold': False
+    'threshold': True
 }
 
 CHECKPOINTS = [
@@ -26,9 +26,9 @@ CHECKPOINTS = [
 ]
 
 DATASETS = [
-    {'ds_name': 'mrpc', 'num_labels': 2},
-    {'ds_name': 'sst2', 'num_labels': 2},
-    {'ds_name': 'rte', 'num_labels': 2}
+    # {'ds_name': 'rte', 'num_labels': 2, 'local_epochs': 1},
+    {'ds_name': 'mrpc', 'num_labels': 2, 'local_epochs': 2},
+    {'ds_name': 'sst2', 'num_labels': 2, 'local_epochs': 5}
 ]
 
 LORA_CONFIGS = [
@@ -37,15 +37,13 @@ LORA_CONFIGS = [
 ]
 
 SCENARIOS = {
-    "Cross-Device": {
-        'num_clients': 80,
+    "Partial-Participation": {
+        'num_clients': 100,
         'clients_per_round': 10,
-        'local_epochs': 2,
     },
-    "Cross-Silo": {
-        'num_clients': 8,
-        'clients_per_round': 8,
-        'local_epochs': 2,
+    "Full-Participation": {
+        'num_clients': 10,
+        'clients_per_round': 10,
     }
 }
 
@@ -95,10 +93,12 @@ def execute_run(config_json):
         fda_rolora_dual_track_ema_standard_opt,
         fda_rolora_dual_track_ema_pure_opt
     )
+    
     hyperparams = json.loads(config_json)
     method_name = hyperparams.pop('METHOD_NAME')
     run_name = hyperparams['extras']
     target_device = hyperparams.pop('TARGET_DEVICE', 'cuda:0')
+    
     utils.DEVICE_RAM_PROGRAM = 'performance'
     utils.set_device(target_device)
     utils.set_seed(42)
@@ -132,6 +132,7 @@ def _worker_task(run_config, device_queue, log_dir):
         start_time = time.time()
         with open(out_file, 'w') as stdout_f, open(err_file, 'w') as stderr_f:
             subprocess.run(cmd, env=env, stdout=stdout_f, stderr=stderr_f, check=True)
+        
         duration = (time.time() - start_time) / 60
         print(f"SUCCESS: {run_identifier} finished on {device} in {duration:.2f} minutes.")
         
@@ -170,9 +171,9 @@ def orchestrate():
                                 chkpt_short = chkpt.split('/')[-1]
                                 
                                 if len(method_variants) > 1:
-                                    run_config['extras'] = f"{chkpt_short}_{ds_name}_r{r_val}_{scen_name}_{dist_name}_{method_name}_v{variant_idx}"
+                                    run_config['extras'] = f"NEW1_{chkpt_short}_{ds_name}_r{r_val}_{scen_name}_{dist_name}_{method_name}_v{variant_idx}"
                                 else:
-                                    run_config['extras'] = f"{chkpt_short}_{ds_name}_r{r_val}_{scen_name}_{dist_name}_{method_name}"
+                                    run_config['extras'] = f"NEW1_{chkpt_short}_{ds_name}_r{r_val}_{scen_name}_{dist_name}_{method_name}"
                                     
                                 all_runs.append(run_config)
                                 
