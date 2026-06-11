@@ -205,7 +205,10 @@ def fedavg_rolora(hyperparams):
         metrics_handler.append_round_metrics(metrics)
         print(f"[{time.strftime('%H:%M:%S')}] Round {r + 1}/{hyperparams['total_rounds']} finished.")
         gc.collect()
-        if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
+        # if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
+        #     break
+        if hyperparams.get('early_stopping') and check_dynamic_early_stopping(hyperparams, metrics_handler.round_metrics):
+            print(f"[{time.strftime('%H:%M:%S')}] Early stopping triggered at round {r + 1}.")
             break
             
     metrics_handler.save_metrics()
@@ -278,154 +281,9 @@ def fed_lora_opt(hyperparams):
         metrics_handler.append_round_metrics(metrics)
         print(f"[{time.strftime('%H:%M:%S')}] Round {r + 1}/{hyperparams['total_rounds']} finished.")
         gc.collect()
-        if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
-            break
-    metrics_handler.save_metrics()
-
-def get_lora_pairs(model):
-    """
-    Extracts and pairs LoRA A and B matrices by their base module name.
-    Returns a dictionary: { 'module_name': {'A': param_A, 'B': param_B} }
-    """
-    lora_pairs = {}
-    for name, param in model.named_parameters():
-        if not param.requires_grad or 'lora_' not in name:
-            continue
-            
-        base_name = name.replace('lora_A.', '').replace('lora_B.', '').replace('default.', '')
-        if base_name not in lora_pairs:
-            lora_pairs[base_name] = {}
-            
-        if 'lora_A' in name:
-            lora_pairs[base_name]['A'] = param
-        elif 'lora_B' in name:
-            lora_pairs[base_name]['B'] = param
-            
-    return lora_pairs
-
-def fed_lora_svd_opt(hyperparams):
-    fed_ds, test_ds = prepare_federated_datasets(
-        hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
-        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
-        hyperparams.get('num_workers', 4), hyperparams.get('pin_memory', True)
-    )
-    base_model = AutoModelForSequenceClassification.from_pretrained(hyperparams['checkpoint'], num_labels=hyperparams['num_labels'], dtype=torch.bfloat16)
-    peft_config = LoraConfig(
-        task_type=TaskType.SEQ_CLS, inference_mode=False,
-        r=hyperparams.get('lora_r', 8), lora_alpha=hyperparams.get('lora_alpha', 16),
-        lora_dropout=0.1, target_modules=hyperparams.get('target_modules', None)
-    )
-    model = get_peft_model(base_model, peft_config).to(utils.DEVICE)
-    train_params = [param for param in model.parameters() if param.requires_grad]
-    lora_pairs = get_lora_pairs(model)
-    dense_global_params = {}
-    for name, matrices in lora_pairs.items():
-        is_transposed = matrices['A'].shape[0] != hyperparams.get('lora_r', 8)
-        if is_transposed:
-            dense_w = (matrices['A'] @ matrices['B']).detach().clone().to(utils.DEVICE)
-        else:
-            dense_w = (matrices['B'] @ matrices['A']).detach().clone().to(utils.DEVICE)
-        dense_w.requires_grad = True
-        dense_global_params[name] = dense_w
-    server_opt_class = get_optimizer_class(hyperparams['server_opt_name'])
-    server_opt = server_opt_class(list(dense_global_params.values()), **get_opt_hyperparams('server', hyperparams))
-    client_opt_class = get_optimizer_class(hyperparams['client_opt_name'])
-    client_sampler = ClientSampler(list(range(hyperparams['num_clients'])), hyperparams['clients_per_round'])
-    client_dict = {c_id: [param.detach().clone().to(get_save_device()) for param in train_params] for c_id in range(hyperparams['num_clients'])}
-    metrics_handler = MetricsHandler(hyperparams)
-    for r in range(hyperparams['total_rounds']):
-        round_start_time = time.time()
-        training_loss = 0.0
-        training_accuracy = 0.0 # NEW: Initialize accumulator
-        
-        sampled_clients = client_sampler.sample()
-        round_start_params = [param.detach().clone() for param in train_params]
-        client_opt = client_opt_class(train_params, **get_opt_hyperparams('client', hyperparams))
-        client_dict = get_updated_client_parameters(client_dict, sampled_clients, round_start_params)
-        round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
-        
-        train_start = time.time()
-        for client_id in sampled_clients:
-            loss, acc = client_round_train(model, train_params, client_dict, client_opt, fed_ds, client_id, round_steps) # NEW: Unpack both
-            training_loss += loss
-            training_accuracy += acc # NEW: Accumulate accuracy
-            
-        train_end = time.time()
-        agg_start = time.time()
-        server_opt.zero_grad()
-        update_l2_norm = 0.0
-        for name, matrices in lora_pairs.items():
-            base_idx_A = next(i for i, p in enumerate(train_params) if p is matrices['A'])
-            base_idx_B = next(i for i, p in enumerate(train_params) if p is matrices['B'])
-            global_A, global_B = round_start_params[base_idx_A].to(utils.DEVICE), round_start_params[base_idx_B].to(utils.DEVICE)
-            is_transposed = matrices['A'].shape[0] != hyperparams.get('lora_r', 8)
-            W_start = (global_A @ global_B) if is_transposed else (global_B @ global_A)
-            
-            # BUG FIX: Synchronize the historical buffer with the truncated W_start before applying gradients
-            dense_global_params[name].data.copy_(W_start)
-            
-            pseudo_grad_sum = torch.zeros_like(W_start)
-            for client_id in sampled_clients:
-                client_A, client_B = client_dict[client_id][base_idx_A].to(utils.DEVICE), client_dict[client_id][base_idx_B].to(utils.DEVICE)
-                client_W = (client_A @ client_B) if is_transposed else (client_B @ client_A)
-                pseudo_grad_sum += (client_W - W_start)
-            avg_drift = pseudo_grad_sum / len(sampled_clients)
-            dense_global_params[name].grad = -avg_drift
-            update_l2_norm += torch.sum(avg_drift**2).item()
-        update_l2_norm = math.sqrt(update_l2_norm)
-        server_opt.step()
-        svd_effective_ranks = []
-        with torch.no_grad():
-            for name, matrices in lora_pairs.items():
-                dense_w = dense_global_params[name].data
-                U, S, Vh = torch.linalg.svd(dense_w.float(), full_matrices=False)
-                
-                is_transposed = matrices['A'].shape[0] != hyperparams.get('lora_r', 8)
-                max_rank = matrices['A'].shape[1] if is_transposed else matrices['A'].shape[0]
-                
-                energy = torch.cumsum(S ** 2, dim=0) / torch.sum(S ** 2)
-                rank = torch.searchsorted(energy, 0.90).item() + 1
-                rank = min(rank, max_rank)
-                svd_effective_ranks.append(rank)
-                
-                U_r = U[:, :rank].to(dense_w.dtype)
-                S_r = S[:rank].to(dense_w.dtype)
-                Vh_r = Vh[:rank, :].to(dense_w.dtype)
-                S_sqrt = torch.diag(torch.sqrt(S_r))
-                
-                left_matrix = U_r @ S_sqrt
-                right_matrix = S_sqrt @ Vh_r
-                
-                if rank < max_rank:
-                    pad_amount = max_rank - rank
-                    # Pad left_matrix shape (M, rank) on the right dimension
-                    left_matrix = torch.nn.functional.pad(left_matrix, (0, pad_amount, 0, 0))
-                    # Pad right_matrix shape (rank, N) on the bottom dimension
-                    right_matrix = torch.nn.functional.pad(right_matrix, (0, 0, 0, pad_amount))
-                
-                if is_transposed:
-                    matrices['A'].copy_(left_matrix)
-                    matrices['B'].copy_(right_matrix)
-                else:
-                    matrices['B'].copy_(left_matrix)
-                    matrices['A'].copy_(right_matrix)
-        avg_svd_rank = sum(svd_effective_ranks) / len(svd_effective_ranks) if svd_effective_ranks else 0
-        agg_end = time.time()
-        round_end_time = time.time()
-        metrics = {
-            "method": "Fed-LoRA-SVD",
-            "round": r + 1,
-            "time_client_training": train_end - train_start,
-            "time_server_aggregation": agg_end - agg_start,
-            "time_round_total": round_end_time - round_start_time,
-            "update_l2_norm": update_l2_norm,
-            "svd_effective_rank": avg_svd_rank,
-            "round_steps": round_steps
-        } | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
-        metrics['training_loss'] = training_loss / hyperparams['clients_per_round']
-        metrics['training_accuracy'] = training_accuracy / hyperparams['clients_per_round'] # NEW: Log accuracy
-        metrics_handler.append_round_metrics(metrics)
-        gc.collect()
-        if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
+        # if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
+        #     break
+        if hyperparams.get('early_stopping') and check_dynamic_early_stopping(hyperparams, metrics_handler.round_metrics):
+            print(f"[{time.strftime('%H:%M:%S')}] Early stopping triggered at round {r + 1}.")
             break
     metrics_handler.save_metrics()

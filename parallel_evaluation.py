@@ -18,7 +18,10 @@ BASE_HYPERPARAMS = {
     'target_modules': ("query", "value"),
     'num_workers': 4,
     'pin_memory': True,
-    'threshold': True
+    'early_stopping': True,
+    'early_stopping_patience': 10,
+    'early_stopping_min_delta': 0.005,
+    'early_stopping_window': 3
 }
 
 CHECKPOINTS = [
@@ -26,9 +29,14 @@ CHECKPOINTS = [
 ]
 
 DATASETS = [
-    # {'ds_name': 'rte', 'num_labels': 2, 'local_epochs': 1},
-    {'ds_name': 'mrpc', 'num_labels': 2, 'local_epochs': 2},
-    {'ds_name': 'sst2', 'num_labels': 2, 'local_epochs': 5}
+    {'ds_name': 'mrpc', 'num_labels': 2},
+    {'ds_name': 'sst2', 'num_labels': 2},
+    {'ds_name': 'rte', 'num_labels': 2}
+]
+
+EPOCH_CONFIGS = [
+    {'e_min': 2, 'max_epochs': 10},
+    {'e_min': 10, 'max_epochs': 20}
 ]
 
 LORA_CONFIGS = [
@@ -63,23 +71,51 @@ METHODS_MECHANICS = {
     ],
     "FDA-RoLoRA-DualTrack": [
         {
-            'e_min': 2, 'max_epochs': 10,
             'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
-            'client_opt_name': 'SGD', 'client_opt_lr': 0.01
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
         }
     ],
     "FDA-RoLoRA-DualTrack-EMA-Standard": [
         {
-            'e_min': 2, 'max_epochs': 10, 'rho': 0.8,
+            'rho': 0.8,
             'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
-            'client_opt_name': 'SGD', 'client_opt_lr': 0.01
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
+        },
+        {
+            'rho': 0.9,
+            'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
         }
     ],
     "FDA-RoLoRA-DualTrack-EMA-Pure": [
         {
-            'e_min': 2, 'max_epochs': 10, 'rho': 0.8, 'alpha_ema': 1.15,
+            'rho': 0.8, 'alpha_ema': 1.15,
             'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
-            'client_opt_name': 'SGD', 'client_opt_lr': 0.01
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
+        },
+        {
+            'rho': 0.8, 'alpha_ema': 1.30,
+            'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
+        }
+    ],
+    "FDA-RoLoRA-DualTrack-SMA": [
+        {
+            'sma_window': 3,
+            'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
+        },
+        {
+            'sma_window': 5,
+            'server_opt_name': 'AdamW', 'server_opt_lr': 1e-3,
+            'client_opt_name': 'SGD', 'client_opt_lr': 0.01,
+            'gamma': 0.3
         }
     ]
 }
@@ -91,9 +127,9 @@ def execute_run(config_json):
     from fdaopt.training.fda_opt import (
         fda_rolora_dual_track_opt,
         fda_rolora_dual_track_ema_standard_opt,
-        fda_rolora_dual_track_ema_pure_opt
+        fda_rolora_dual_track_ema_pure_opt,
+        fda_rolora_dual_track_sma_opt
     )
-    
     hyperparams = json.loads(config_json)
     method_name = hyperparams.pop('METHOD_NAME')
     run_name = hyperparams['extras']
@@ -113,6 +149,8 @@ def execute_run(config_json):
         fda_rolora_dual_track_ema_standard_opt(hyperparams)
     elif method_name == "FDA-RoLoRA-DualTrack-EMA-Pure":
         fda_rolora_dual_track_ema_pure_opt(hyperparams)
+    elif method_name == "FDA-RoLoRA-DualTrack-SMA":
+        fda_rolora_dual_track_sma_opt(hyperparams)
     else:
         raise ValueError(f"Unknown method requested: {method_name}")
 
@@ -123,6 +161,7 @@ def _worker_task(run_config, device_queue, log_dir):
         run_identifier = run_config['extras']
         out_file = os.path.join(log_dir, f"{run_identifier}.out")
         err_file = os.path.join(log_dir, f"{run_identifier}.err")
+        
         config_str = json.dumps(run_config)
         cmd = [sys.executable, "-u", os.path.abspath(__file__), "--run_config", config_str]
         
@@ -146,6 +185,7 @@ def _worker_task(run_config, device_queue, log_dir):
 
 def orchestrate():
     print(f"Starting Parallel Evaluation Matrix. Max Concurrency: {MAX_CONCURRENT_JOBS}")
+    
     log_dir = os.path.join("results", "logs")
     os.makedirs(log_dir, exist_ok=True)
     all_runs = []
@@ -153,30 +193,42 @@ def orchestrate():
     for chkpt in CHECKPOINTS:
         for ds in DATASETS:
             for lora_cfg in LORA_CONFIGS:
-                for scen_name, scen_cfg in SCENARIOS.items():
-                    for dist_name, dist_cfg in DISTRIBUTIONS.items():
-                        for method_name, method_variants in METHODS_MECHANICS.items():
-                            for variant_idx, method_cfg in enumerate(method_variants):
-                                run_config = BASE_HYPERPARAMS.copy()
-                                run_config['checkpoint'] = chkpt
-                                run_config.update(ds)
-                                run_config.update(lora_cfg)
-                                run_config.update(scen_cfg)
-                                run_config.update(dist_cfg)
-                                run_config.update(method_cfg)
-                                run_config['METHOD_NAME'] = method_name
-                                
-                                ds_name = ds['ds_name']
-                                r_val = lora_cfg['lora_r']
-                                chkpt_short = chkpt.split('/')[-1]
-                                
-                                if len(method_variants) > 1:
-                                    run_config['extras'] = f"NEW1_{chkpt_short}_{ds_name}_r{r_val}_{scen_name}_{dist_name}_{method_name}_v{variant_idx}"
-                                else:
-                                    run_config['extras'] = f"NEW1_{chkpt_short}_{ds_name}_r{r_val}_{scen_name}_{dist_name}_{method_name}"
+                for epoch_cfg in EPOCH_CONFIGS:
+                    for scen_name, scen_cfg in SCENARIOS.items():
+                        for dist_name, dist_cfg in DISTRIBUTIONS.items():
+                            for method_name, method_variants in METHODS_MECHANICS.items():
+                                for variant_idx, method_cfg in enumerate(method_variants):
                                     
-                                all_runs.append(run_config)
-                                
+                                    run_config = BASE_HYPERPARAMS.copy()
+                                    run_config['checkpoint'] = chkpt
+                                    run_config.update(ds)
+                                    run_config.update(lora_cfg)
+                                    run_config.update(scen_cfg)
+                                    run_config.update(dist_cfg)
+                                    run_config.update(method_cfg)
+                                    
+                                    if method_name == "FedAvg-RoLoRA":
+                                        run_config['local_epochs'] = epoch_cfg['e_min']
+                                    else:
+                                        run_config['local_epochs'] = 1
+                                        run_config['e_min'] = epoch_cfg['e_min']
+                                        run_config['max_epochs'] = epoch_cfg['max_epochs']
+                                        
+                                    run_config['METHOD_NAME'] = method_name
+                                    
+                                    ds_name = ds['ds_name']
+                                    r_val = lora_cfg['lora_r']
+                                    chkpt_short = chkpt.split('/')[-1]
+                                    e_m = epoch_cfg['e_min']
+                                    e_x = epoch_cfg['max_epochs']
+                                    
+                                    if len(method_variants) > 1:
+                                        run_config['extras'] = f"Eval_{chkpt_short}_{ds_name}_r{r_val}_emin{e_m}_emax{e_x}_{scen_name}_{dist_name}_{method_name}_v{variant_idx}"
+                                    else:
+                                        run_config['extras'] = f"Eval_{chkpt_short}_{ds_name}_r{r_val}_emin{e_m}_emax{e_x}_{scen_name}_{dist_name}_{method_name}"
+                                        
+                                    all_runs.append(run_config)
+                                    
     total_runs = len(all_runs)
     print(f"Total configurations scheduled: {total_runs}")
     print(f"Available Devices: {AVAILABLE_DEVICES}\n")
@@ -196,6 +248,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--run_config', type=str, default=None, help="Internal use: JSON string of hyperparams.")
     args = parser.parse_args()
+    
     if args.run_config:
         execute_run(args.run_config)
     else:

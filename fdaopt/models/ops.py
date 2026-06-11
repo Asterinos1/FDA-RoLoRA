@@ -407,3 +407,42 @@ def stop_training_with_threshold(hyperparams, metrics):
             if metrics['accuracy_m'] >= 0.906 * 0.99 and metrics['accuracy_mm'] >= 0.907 * 0.99:
                 return True
     return False
+
+def get_target_metric_value(ds_name, metrics):
+    """Extracts the primary evaluation metric based on the dataset."""
+    if ds_name == 'cola':
+        return metrics.get('matthews_correlation', 0.0)
+    elif ds_name == 'mnli':
+        return (metrics.get('accuracy_m', 0.0) + metrics.get('accuracy_mm', 0.0)) / 2.0
+    return metrics.get('accuracy', 0.0)
+
+def check_dynamic_early_stopping(hyperparams, metrics_history):
+    """
+    Dynamically halts training on plateaus or high-variance jittering.
+    """
+    patience = hyperparams.get('early_stopping_patience', 10)
+    min_delta = hyperparams.get('early_stopping_min_delta', 0.005)
+    window_size = hyperparams.get('early_stopping_window', 3)
+
+    if len(metrics_history) < patience + window_size:
+        return False
+
+    values = [get_target_metric_value(hyperparams['ds_name'], m) for m in metrics_history]
+
+    # Apply Simple Moving Average to smooth out extreme jitter
+    smoothed_values = [
+        sum(values[i:i+window_size]) / window_size
+        for i in range(len(values) - window_size + 1)
+    ]
+
+    best_value = -float('inf')
+    rounds_without_improvement = 0
+
+    for val in smoothed_values:
+        if val > best_value + min_delta:
+            best_value = val
+            rounds_without_improvement = 0
+        else:
+            rounds_without_improvement += 1
+
+    return rounds_without_improvement >= patience
