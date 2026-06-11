@@ -216,20 +216,77 @@ def linear_variance_approx(client_drifts, ksi_vector):
     Computes variance approximation iteratively without vectorizing,
     saving significant VRAM and preventing memory fragmentation.
     """
-    norm_sq_drifts = []
-    dot_products = []
+    # BUG FIX: Compute the full L2 norm squared of the average drift vector instead of a 1D projection.
+    # This prevents the mathematical overestimation of variance that forces catastrophic overtraining.
+    num_clients = len(client_drifts)
+    sum_sq_norms = 0.0
+    
+    # S_1: Expected squared norm
     for drifts in client_drifts.values():
         norm_sq_drift = 0.0
-        dot_product = 0.0
-        for drift_param, ksi_param in zip(drifts, ksi_vector):
-            drift_param = drift_param.to(utils.DEVICE)
-            norm_sq_drift += torch.sum(drift_param ** 2).item()
-            dot_product += torch.sum(drift_param * ksi_param).item()
-        norm_sq_drifts.append(norm_sq_drift)
-        dot_products.append(dot_product)
-    S_1 = sum(norm_sq_drifts) / len(norm_sq_drifts)
-    S_2 = sum(dot_products) / len(dot_products)
-    return S_1 - (S_2 ** 2)
+        for drift_param in drifts:
+            norm_sq_drift += torch.sum(drift_param.to(utils.DEVICE) ** 2).item()
+        sum_sq_norms += norm_sq_drift
+        
+    S_1 = sum_sq_norms / num_clients
+    
+    # S_2: Squared norm of expected drift
+    S_2_sq = 0.0
+    first_client_id = list(client_drifts.keys())[0]
+    num_params = len(client_drifts[first_client_id])
+    
+    for param_idx in range(num_params):
+        avg_param = None
+        for client_id, drifts in client_drifts.items():
+            if avg_param is None:
+                avg_param = drifts[param_idx].clone().to(utils.DEVICE) / num_clients
+            else:
+                avg_param.add_(drifts[param_idx].to(utils.DEVICE) / num_clients)
+        S_2_sq += torch.sum(avg_param ** 2).item()
+        
+    return S_1 - S_2_sq
+
+
+def linear_variance_approx2(client_drifts, global_current, global_prev):
+    """
+    Memory-efficient 1:1 port of the FedL-Sync-FDA linear variance approximation.
+    Args:
+        client_drifts: List of state_dicts (or dicts of tensors) representing Delta_i for each client.
+        global_current: state_dict of the current global model (w_t0).
+        global_prev: state_dict of the previous global model (w_tminus1).
+    Returns:
+        float: The estimated variance.
+    """
+    # BUG FIX: Compute the full L2 norm squared of the average drift vector instead of a 1D projection.
+    # This prevents the mathematical overestimation of variance that forces catastrophic overtraining.
+    num_clients = len(client_drifts)
+    if num_clients == 0: return 0.0
+    sum_sq_norms = 0.0
+    
+    # S_1: Expected squared norm
+    for delta_i in client_drifts:
+        client_sq_norm = 0.0
+        for k in delta_i.keys():
+            client_sq_norm += torch.sum(delta_i[k] ** 2).item()
+        sum_sq_norms += client_sq_norm
+        
+    S_1 = sum_sq_norms / num_clients
+    
+    # S_2: Squared norm of expected drift
+    S_2_sq = 0.0
+    keys = client_drifts[0].keys()
+    
+    for k in keys:
+        avg_k = None
+        for delta_i in client_drifts:
+            if avg_k is None:
+                avg_k = delta_i[k].clone() / num_clients
+            else:
+                avg_k.add_(delta_i[k] / num_clients)
+        S_2_sq += torch.sum(avg_k ** 2).item()
+    
+    variance_approx = S_1 - S_2_sq
+    return variance_approx
 
 def get_ksi_unit2(global_current, global_prev):
     """
@@ -255,34 +312,6 @@ def get_ksi_unit2(global_current, global_prev):
         for k in ksi.keys():
             ksi[k] = ksi[k] / diff_norm
     return ksi
-
-def linear_variance_approx2(client_drifts, global_current, global_prev):
-    """
-    Memory-efficient 1:1 port of the FedL-Sync-FDA linear variance approximation.
-    Args:
-        client_drifts: List of state_dicts (or dicts of tensors) representing Delta_i for each client.
-        global_current: state_dict of the current global model (w_t0).
-        global_prev: state_dict of the previous global model (w_tminus1).
-    Returns:
-        float: The estimated variance.
-    """
-    ksi = get_ksi_unit2(global_current, global_prev)
-    num_clients = len(client_drifts)
-    sum_sq_norms = 0.0
-    sum_dot_products = 0.0
-    for delta_i in client_drifts:
-        client_sq_norm = 0.0
-        client_dot_product = 0.0
-        for k in delta_i.keys():
-            drift_tensor = delta_i[k]
-            client_sq_norm += torch.sum(drift_tensor ** 2).item()
-            client_dot_product += torch.sum(ksi[k] * drift_tensor).item()
-        sum_sq_norms += client_sq_norm
-        sum_dot_products += client_dot_product
-    mean_sq_norm = sum_sq_norms / num_clients
-    mean_dot_product = sum_dot_products / num_clients
-    variance_approx = mean_sq_norm - (mean_dot_product ** 2)
-    return variance_approx
 
 @torch.no_grad
 def variance(client_drifts):
@@ -378,3 +407,42 @@ def stop_training_with_threshold(hyperparams, metrics):
             if metrics['accuracy_m'] >= 0.906 * 0.99 and metrics['accuracy_mm'] >= 0.907 * 0.99:
                 return True
     return False
+
+def get_target_metric_value(ds_name, metrics):
+    """Extracts the primary evaluation metric based on the dataset."""
+    if ds_name == 'cola':
+        return metrics.get('matthews_correlation', 0.0)
+    elif ds_name == 'mnli':
+        return (metrics.get('accuracy_m', 0.0) + metrics.get('accuracy_mm', 0.0)) / 2.0
+    return metrics.get('accuracy', 0.0)
+
+def check_dynamic_early_stopping(hyperparams, metrics_history):
+    """
+    Dynamically halts training on plateaus or high-variance jittering.
+    """
+    patience = hyperparams.get('early_stopping_patience', 10)
+    min_delta = hyperparams.get('early_stopping_min_delta', 0.005)
+    window_size = hyperparams.get('early_stopping_window', 3)
+
+    if len(metrics_history) < patience + window_size:
+        return False
+
+    values = [get_target_metric_value(hyperparams['ds_name'], m) for m in metrics_history]
+
+    # Apply Simple Moving Average to smooth out extreme jitter
+    smoothed_values = [
+        sum(values[i:i+window_size]) / window_size
+        for i in range(len(values) - window_size + 1)
+    ]
+
+    best_value = -float('inf')
+    rounds_without_improvement = 0
+
+    for val in smoothed_values:
+        if val > best_value + min_delta:
+            best_value = val
+            rounds_without_improvement = 0
+        else:
+            rounds_without_improvement += 1
+
+    return rounds_without_improvement >= patience

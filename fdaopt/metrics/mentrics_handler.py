@@ -47,8 +47,13 @@ class MetricsHandler:
             filepath (str, optional): The directory where the CSV file will be saved. Defaults to './'.
         """
         # Combine the unique hyperparameters with round metrics
+        # round_metrics_with_id = [
+        #     dict(self.hyperparams.items() | round_metrics.items())
+        #     for round_metrics in self.round_metrics
+        # ]
+        # fixed a bug where the hyperparameters were not being combined correctly and crashed the runs
         round_metrics_with_id = [
-            dict(self.hyperparams.items() | round_metrics.items())
+            {**self.hyperparams, **round_metrics}
             for round_metrics in self.round_metrics
         ]
 
