@@ -1041,6 +1041,167 @@ def fda_rolora_dual_track_ema_pure_opt(hyperparams):
             
     metrics_handler.save_metrics()
 
+def fda_rolora_dual_track_sma_opt(hyperparams):
+    """
+    Executes FDA-RoLoRA with Dual-Track Thresholding using Simple Moving Average (SMA).
+    Applies a uniform average over a fixed window of historical target proposals to smooth the threshold.
+    """
+    e_min = hyperparams.get('e_min', 2)
+    e_max = hyperparams.get('max_epochs', 10)
+    gamma = hyperparams.get('gamma', 0.3)
+    sma_window = hyperparams.get('sma_window', 3)
+    
+    fed_ds, test_ds = prepare_federated_datasets(
+        hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
+        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
+        hyperparams.get('num_workers', 4), hyperparams.get('pin_memory', True)
+    )
+    base_model = AutoModelForSequenceClassification.from_pretrained(
+        hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
+    )
+    
+    peft_config = LoraConfig(
+        task_type=TaskType.SEQ_CLS, inference_mode=False,
+        r=hyperparams.get('lora_r', 8), lora_alpha=hyperparams.get('lora_alpha', 16),
+        lora_dropout=0.1, target_modules=hyperparams.get('target_modules', None)
+    )
+    model = get_peft_model(base_model, peft_config).to(utils.DEVICE)
+    
+    params_A = [p for n, p in model.named_parameters() if 'lora_A' in n and p.requires_grad]
+    params_B = [p for n, p in model.named_parameters() if 'lora_B' in n and p.requires_grad]
+    params_other = [p for n, p in model.named_parameters() if 'lora_' not in n and p.requires_grad]
+    params_A = params_A + params_other
+    params_B = params_B + params_other
+    
+    server_opt_A, _ = server_client_optimizers(params_A, hyperparams)
+    server_opt_B, _ = server_client_optimizers(params_B, hyperparams)
+    
+    client_sampler = ClientSampler(list(range(hyperparams['num_clients'])), hyperparams['clients_per_round'])
+    
+    client_dict_A = {c_id: [param.detach().clone().to(get_save_device()) for param in params_A] for c_id in range(hyperparams['num_clients'])}
+    client_dict_B = {c_id: [param.detach().clone().to(get_save_device()) for param in params_B] for c_id in range(hyperparams['num_clients'])}
+    
+    metrics_handler = MetricsHandler(hyperparams)
+    
+    theta_A = hyperparams.get('theta', 0.0)
+    theta_B = hyperparams.get('theta', 0.0)
+    
+    history_A = [theta_A] if theta_A > 0.0 else []
+    history_B = [theta_B] if theta_B > 0.0 else []
+    
+    first_round = True
+    
+    for r in range(hyperparams['total_rounds']):
+        round_start_time = time.time()
+        
+        active_matrix = 'A' if r % 2 == 0 else 'B'
+        toggle_rolora_matrices(model, active_matrix)
+        
+        active_params = params_A if active_matrix == 'A' else params_B
+        active_server_opt = server_opt_A if active_matrix == 'A' else server_opt_B
+        active_client_dict = client_dict_A if active_matrix == 'A' else client_dict_B
+        
+        decay_optimizer_state(active_server_opt, gamma)
+        current_theta = theta_A if active_matrix == 'A' else theta_B
+        
+        _, client_opt = server_client_optimizers(active_params, hyperparams)
+        round_start_active_params = [param.detach().clone() for param in active_params]
+        
+        sampled_clients = client_sampler.sample()
+        active_client_dict = get_updated_client_parameters(active_client_dict, sampled_clients, round_start_active_params)
+        round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
+        
+        training_loss = 0.0
+        training_accuracy = 0.0
+        var_subspace = 0.0
+        avg_norm_sq_drifts = 0.0
+        norm_sq_avg_drift = 0.0
+        round_epochs = 0
+        
+        train_start = time.time()
+        while True:
+            round_epochs += 1
+            for client_id in sampled_clients:
+                loss, acc = client_round_train(model, active_params, active_client_dict, client_opt, fed_ds, client_id, round_steps)
+                training_loss += loss
+                training_accuracy += acc
+                
+            if round_epochs >= e_min:
+                client_drifts = compute_client_drifts(round_start_active_params, active_client_dict)
+                var_subspace, avg_norm_sq_drifts, norm_sq_avg_drift = variance(client_drifts)
+                
+                if first_round:
+                    first_round = False
+                    break
+                    
+                if var_subspace > current_theta or round_epochs >= e_max:
+                    break
+            elif round_epochs >= e_max:
+                client_drifts = compute_client_drifts(round_start_active_params, active_client_dict)
+                var_subspace, avg_norm_sq_drifts, norm_sq_avg_drift = variance(client_drifts)
+                break
+                
+        train_end = time.time()
+        agg_start = time.time()
+        
+        training_loss = training_loss / round_epochs
+        training_accuracy = training_accuracy / round_epochs
+        
+        pseudo_gradients = compute_pseudo_gradients(client_drifts)
+        with torch.no_grad():
+            update_l2_norm = math.sqrt(sum(torch.sum(g**2).item() for g in pseudo_gradients))
+            
+        copy_parameters(from_params=round_start_active_params, to_params=active_params)
+        set_gradients(active_params, pseudo_gradients)
+        active_server_opt.step()
+        active_server_opt.zero_grad()
+        
+        agg_end = time.time()
+        round_end_time = time.time()
+        
+        proposed_target = ((e_max / 2) / round_epochs) * var_subspace
+        
+        if active_matrix == 'A':
+            history_A.append(proposed_target)
+            if len(history_A) > sma_window:
+                history_A.pop(0)
+            theta_A = sum(history_A) / len(history_A)
+            next_theta = theta_A
+        else:
+            history_B.append(proposed_target)
+            if len(history_B) > sma_window:
+                history_B.pop(0)
+            theta_B = sum(history_B) / len(history_B)
+            next_theta = theta_B
+            
+        metrics = {
+            "method": "FDA-RoLoRA-DualTrack-SMA",
+            "round": r + 1,
+            "active_matrix": active_matrix,
+            "time_client_training": train_end - train_start,
+            "time_server_aggregation": agg_end - agg_start,
+            "time_round_total": round_end_time - round_start_time,
+            "update_l2_norm": update_l2_norm,
+            "round_epochs": round_epochs,
+            "round_steps": round_epochs * round_steps,
+            "variance": var_subspace,
+            "avg_norm_sq_drifts": avg_norm_sq_drifts,
+            "norm_sq_avg_drift": norm_sq_avg_drift,
+            "theta_phase": current_theta
+        } | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
+        
+        metrics['training_loss'] = training_loss / hyperparams['clients_per_round']
+        metrics['training_accuracy'] = training_accuracy / hyperparams['clients_per_round']
+        metrics_handler.append_round_metrics(metrics)
+        
+        print(f"[{time.strftime('%H:%M:%S')}] Round {r + 1}/{hyperparams['total_rounds']} finished.")
+        gc.collect()
+        
+        if hyperparams.get('threshold') and stop_training_with_threshold(hyperparams, metrics):
+            break
+            
+    metrics_handler.save_metrics()
+
 def get_lora_pairs(model):
     """
     Extracts and pairs LoRA A and B matrices by their base module name.
