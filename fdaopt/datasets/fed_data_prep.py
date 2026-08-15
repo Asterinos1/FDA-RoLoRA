@@ -1,15 +1,33 @@
-from fdaopt.utils import np, random, DataLoader, AutoTokenizer, DataCollatorWithPadding, load_dataset
-def calculate_prior_distribution(raw_train_dataset):
+"""
+Federated dataset preparation, Dirichlet non-IID partitioning, and client sampling.
+
+Provides utilities for:
+  - Dirichlet non-IID label distribution partitioning across arbitrary numbers of clients.
+  - Extreme non-IID partition synthesis for benchmark datasets (e.g. MNIST).
+  - Hugging Face dataset tokenization, column formatting, and PyTorch DataLoader creation.
+  - Infinite cyclic batch generators (`FederatedDataset`) and balanced round client samplers (`ClientSampler`).
+"""
+
+import random
+from typing import List, Dict, Tuple, Any, Optional, Generator
+import numpy as np
+import torch
+from torch.utils.data import DataLoader
+from datasets import load_dataset, Dataset, DatasetDict
+from transformers import AutoTokenizer, DataCollatorWithPadding
+
+from fdaopt import utils
+
+
+def calculate_prior_distribution(raw_train_dataset: Dataset) -> Tuple[np.ndarray, int]:
     """
-    Calculate the prior distribution of labels in the training dataset.
-    This function calculates the proportion of each label in the training dataset,
-    which is used as the prior distribution for Dirichlet sampling.
+    Calculate the empirical prior distribution of class labels in the training dataset.
+
     Args:
-        raw_train_dataset (datasets.arrow_dataset.Dataset): The training dataset.
+        raw_train_dataset (Dataset): Hugging Face Dataset containing a 'label' column.
+
     Returns:
-        tuple: A tuple containing:
-            - prior_distribution (numpy.ndarray): An array of label proportions.
-            - num_labels (int): The number of unique labels in the dataset.
+        tuple: (prior_distribution_array, num_classes)
     """
     label_count_dict = dict(raw_train_dataset.to_pandas()['label'].value_counts())
     n = len(raw_train_dataset)
@@ -17,79 +35,88 @@ def calculate_prior_distribution(raw_train_dataset):
     prior_distribution = np.array([c / n for _, c in label_count_tuple])
     num_labels = len(label_count_dict)
     return prior_distribution, num_labels
-def sample_to_client(client_sample_counts, sample_label):
+
+
+def sample_to_client(client_sample_counts: np.ndarray, sample_label: int) -> int:
     """
-    Assign a sample to a client based on the sample's label and the remaining counts for each client.
-    This function assigns a sample to the client that still needs more samples of the given label.
-    It decrements the count for that label for the chosen client. If no client has a remaining count
-    of at least 1 for the label, the function assigns the sample to the client with the largest leftover count
-    for that label.
+    Assign a dataset sample to a client based on remaining quota from Dirichlet distribution.
+
     Args:
-        client_sample_counts (numpy.ndarray): A 2D array where each row corresponds to a client and each column corresponds
-            to the count (float) of samples needed for each label. The element at (i, j) represents the decimal number of
-            samples of label j that client i still needs.
-        sample_label (int): The label of the sample to be assigned to a client.
+        client_sample_counts (np.ndarray): 2D float array of shape (num_clients, num_classes)
+            tracking the remaining quota of samples needed for each class by each client.
+        sample_label (int): Integer class label of the current sample.
+
     Returns:
-        int: The index of the client to which the sample has been assigned.
+        int: Index of the chosen client.
     """
     num_clients = len(client_sample_counts)
     client_indices = np.random.permutation(num_clients)
+
     for client_idx in client_indices:
-        client_sample_count = client_sample_counts[client_idx]
-        if client_sample_count[sample_label] >= 1:
-            client_sample_count[sample_label] -= 1
+        if client_sample_counts[client_idx, sample_label] >= 1:
+            client_sample_counts[client_idx, sample_label] -= 1
             return client_idx
-    client_idx = np.argmax(client_sample_counts[:, sample_label])
-    client_sample_counts[client_idx][sample_label] -= 1
+
+    # If all quotas are exhausted below 1.0, assign to client with largest residual
+    client_idx = int(np.argmax(client_sample_counts[:, sample_label]))
+    client_sample_counts[client_idx, sample_label] -= 1
     return client_idx
-def federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha):
+
+
+def federated_dirichlet_datasets(
+    raw_train_dataset: Dataset,
+    prior_distribution: np.ndarray,
+    num_clients: int,
+    alpha: float
+) -> List[Dataset]:
     """
-    Create federated datasets using Dirichlet-distributed label partitions.
-    This function partitions the training dataset into multiple subsets, each corresponding
-    to a client. The label distribution for each client is drawn from a Dirichlet distribution
-    parameterized by the given prior distribution and concentration parameter alpha.
-    The function also aims to keep the datasets as equal in size as possible.
+    Partition a dataset across clients using a Dirichlet distribution: p_k ~ Dir(alpha * p).
+
     Args:
-        raw_train_dataset (datasets.arrow_dataset.Dataset): The training dataset.
-        prior_distribution (numpy.ndarray): An array representing the prior distribution of labels.
-        num_clients (int): The number of clients.
-        alpha (float): The concentration parameter for the Dirichlet distribution.
+        raw_train_dataset (Dataset): Hugging Face Dataset to partition.
+        prior_distribution (np.ndarray): Base label prior distribution array.
+        num_clients (int): Total number of clients.
+        alpha (float): Concentration parameter (smaller alpha = higher non-IID heterogeneity).
+
     Returns:
-        list: A list of `datasets.arrow_dataset.Dataset` objects, each representing a client's dataset.
+        list of Dataset: Subsets assigned to each client.
     """
     n = len(raw_train_dataset)
     client_num_samples = n / num_clients
     client_distributions = np.random.dirichlet(alpha * prior_distribution, num_clients)
-    client_sample_indices = [[] for i in range(num_clients)]
+    client_sample_indices: List[List[int]] = [[] for _ in range(num_clients)]
+
     client_sample_counts = np.array([
         client_distributions[client_idx, :] * client_num_samples
         for client_idx in range(num_clients)
     ])
+
     for sample_idx, sample in enumerate(raw_train_dataset):
         client_idx = sample_to_client(client_sample_counts, sample['label'])
         client_sample_indices[client_idx].append(sample_idx)
-    client_datasets = []
-    for client_indices in client_sample_indices:
-        client_dataset = raw_train_dataset.select(client_indices)
-        client_datasets.append(client_dataset)
+
+    client_datasets = [raw_train_dataset.select(indices) for indices in client_sample_indices]
     return client_datasets
-def tokenize_client_datasets(client_datasets, tokenize_fn):
+
+
+def tokenize_client_datasets(client_datasets: List[Dataset], tokenize_fn) -> List[Dataset]:
     """
-    Tokenize and preprocess a list of client datasets.
-    This function tokenizes and preprocesses each dataset in the provided list of client datasets.
-    It applies the specified tokenization function, renames the "label" column to "labels",
-    removes unnecessary columns, and sets the format to PyTorch tensors.
+    Tokenize and format a list of client datasets for PyTorch tensor ingestion.
+
     Args:
-        client_datasets (list of datasets.arrow_dataset.Dataset): A list of client datasets to be tokenized and preprocessed.
-        tokenize_fn (function): A function that takes an example and returns its tokenized form.
+        client_datasets (list of Dataset): Raw client datasets.
+        tokenize_fn: Tokenization mapping function.
+
     Returns:
-        list of datasets.arrow_dataset.Dataset: A list of tokenized and preprocessed client datasets.
+        list of Dataset: Formatted tokenized datasets.
     """
     expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
     tok_client_datasets = []
+
     for client_dataset in client_datasets:
         tok_client_dataset = client_dataset.map(tokenize_fn, batched=True)
-        tok_client_dataset = tok_client_dataset.rename_column("label", "labels")
+        if "label" in tok_client_dataset.column_names:
+            tok_client_dataset = tok_client_dataset.rename_column("label", "labels")
         columns_to_remove = [
             column for column in tok_client_dataset.column_names
             if column not in expected_columns
@@ -97,159 +124,158 @@ def tokenize_client_datasets(client_datasets, tokenize_fn):
         tok_client_dataset = tok_client_dataset.remove_columns(columns_to_remove)
         tok_client_dataset.set_format("torch")
         tok_client_datasets.append(tok_client_dataset)
+
     return tok_client_datasets
-def preprocess_test_dataset(raw_test_dataset, tokenize_fn, data_collator, batch_size):
+
+
+def preprocess_test_dataset(
+    raw_test_dataset: Dataset,
+    tokenize_fn,
+    data_collator: DataCollatorWithPadding,
+    batch_size: int
+) -> DataLoader:
     """
-    Preprocess and tokenize the test dataset, then create a DataLoader for it.
-    This function tokenizes and preprocesses the provided test dataset using the specified
-    tokenization function. It renames the "label" column to "labels", removes unnecessary columns,
-    sets the format to PyTorch tensors, and then creates a DataLoader for the test dataset.
+    Tokenize and create a DataLoader for evaluation / test datasets.
+
     Args:
-        raw_test_dataset (datasets.arrow_dataset.Dataset): The raw test dataset to be tokenized and preprocessed.
-        tokenize_fn (function): A function that takes an example and returns its tokenized form.
-        data_collator (transformers.DataCollator): A data collator to be used for padding and batching.
-        batch_size (int): The batch size to be used by the DataLoader.
+        raw_test_dataset (Dataset): Test or validation dataset split.
+        tokenize_fn: Tokenization function.
+        data_collator (DataCollatorWithPadding): Batch collator with padding.
+        batch_size (int): Evaluation batch size.
+
     Returns:
-        DataLoader: A DataLoader for the tokenized and preprocessed test dataset.
+        DataLoader: Test DataLoader.
     """
     expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
     tok_test_dataset = raw_test_dataset.map(tokenize_fn, batched=True)
-    tok_test_dataset = tok_test_dataset.rename_column("label", "labels")
+    if "label" in tok_test_dataset.column_names:
+        tok_test_dataset = tok_test_dataset.rename_column("label", "labels")
     columns_to_remove = [
         column for column in tok_test_dataset.column_names
         if column not in expected_columns
     ]
     tok_test_dataset = tok_test_dataset.remove_columns(columns_to_remove)
     tok_test_dataset.set_format("torch")
+
     test_ds = DataLoader(
-        tok_test_dataset, batch_size=batch_size, collate_fn=data_collator
+        tok_test_dataset,
+        batch_size=batch_size,
+        collate_fn=data_collator
     )
     return test_ds
-def create_client_dataloaders(tok_client_datasets, batch_size, collate_fn, num_workers=0, pin_memory=False):
+
+
+def create_client_dataloaders(
+    tok_client_datasets: List[Dataset],
+    batch_size: int,
+    collate_fn: Optional[Any],
+    num_workers: int = 0,
+    pin_memory: bool = False
+) -> List[DataLoader]:
     """
-    Create data loaders for a list of tokenized client datasets.
-    This function takes a list of tokenized client datasets and creates a DataLoader for each dataset.
-    The resulting data loaders are stored in a list and returned.
+    Instantiate PyTorch DataLoader objects for all tokenized client datasets.
+
     Args:
-        tok_client_datasets (list of datasets.arrow_dataset.Dataset): A list of tokenized client datasets.
-        batch_size (int): The batch size to be used by the data loaders.
-        collate_fn (function): A collate function to be used by the data loaders.
+        tok_client_datasets (list of Dataset): Preprocessed client datasets.
+        batch_size (int): Mini-batch size.
+        collate_fn (Optional): Collate function for batch padding.
+        num_workers (int): Number of background subprocess workers.
+        pin_memory (bool): If True, pin memory for faster GPU tensor transfer.
+
     Returns:
-        list of DataLoader: A list of data loaders, each corresponding to a tokenized client dataset.
+        list of DataLoader: Client data loaders.
     """
     client_dataloaders = []
     for tok_client_dataset in tok_client_datasets:
         client_dataloader = DataLoader(
-            tok_client_dataset, shuffle=True, batch_size=batch_size, collate_fn=collate_fn,
-            num_workers=num_workers, pin_memory=pin_memory,
+            tok_client_dataset,
+            shuffle=True,
+            batch_size=batch_size,
+            collate_fn=collate_fn,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
             persistent_workers=True if num_workers > 0 else False
         )
         client_dataloaders.append(client_dataloader)
     return client_dataloaders
-def tokenize_function(ds_path, ds_name, tokenizer):
+
+
+def tokenize_function(ds_path: str, ds_name: str, tokenizer: AutoTokenizer):
     """
-    Return a tokenization function based on the dataset path and name.
-    This function returns the appropriate tokenization function for the specified dataset.
-    Currently, it supports the GLUE MRPC dataset.
+    Construct dataset-specific text tokenization lambda for GLUE NLP tasks.
+
     Args:
-        ds_path (str): The path or identifier of the dataset.
-        ds_name (str): The name of the dataset.
-        tokenizer (AutoTokenizer): The tokenizer to be used.
+        ds_path (str): Dataset repository path (e.g. 'glue').
+        ds_name (str): GLUE benchmark task (e.g. 'mrpc', 'sst2', 'mnli', 'qnli', 'rte').
+        tokenizer (AutoTokenizer): Pretrained Hugging Face tokenizer.
+
     Returns:
-        function: A tokenization function.
+        Callable: Tokenization mapping function.
     """
-    if ds_path == "glue" or ds_path == "nyu-mll/glue":
-        if ds_name == "mrpc":
+    if ds_path in ("glue", "nyu-mll/glue"):
+        if ds_name in ("mrpc", "rte", "stsb"):
             return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
-        if ds_name == "rte":
-            return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
-        if ds_name == "stsb":
-            return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
-        if ds_name == "cola":
-            return lambda example: tokenizer(example["sentence"], truncation=True)
-        if ds_name == "sst2":
+        if ds_name in ("cola", "sst2"):
             return lambda example: tokenizer(example["sentence"], truncation=True)
         if ds_name == "qnli":
             return lambda example: tokenizer(example["question"], example["sentence"], truncation=True)
         if ds_name == "mnli":
             return lambda example: tokenizer(example["premise"], example["hypothesis"], truncation=True)
     return None
-def test_dataset_split(raw_datasets, ds_path, ds_name):
+
+
+def test_dataset_split(raw_datasets: DatasetDict, ds_path: str, ds_name: str) -> Dict[str, Dataset]:
     """
-    Split the raw dataset into the appropriate test set.
-    This function extracts the test set from the provided raw dataset based on the dataset path.
-    For the GLUE dataset, it returns the validation split as the test set following prior work.
+    Extract standard validation / test splits matching NLP federated literature benchmarks.
+
     Args:
-        raw_datasets (datasets.DatasetDict): The raw dataset containing multiple splits.
-        ds_path (str): The path or identifier of the dataset.
+        raw_datasets (DatasetDict): Loaded raw dataset dictionary.
+        ds_path (str): Dataset path.
+        ds_name (str): Dataset task name.
+
     Returns:
-        Dictionary with key the name of the test ds and value a datasets.Dataset from the extracted test dataset split.
+        dict: Map of split names to Dataset objects.
     """
-    if ds_path == 'nyu-mll/glue' or ds_path == 'glue':
+    if ds_path in ('nyu-mll/glue', 'glue'):
         if ds_name == 'mnli':
-            return {'mnli_matched': raw_datasets['validation_matched'],
-                    'mnli_mismatched': raw_datasets['validation_mismatched']}
-        else:
-            return {ds_name: raw_datasets['validation']}
-def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha, batch_size, num_workers=0, pin_memory=False):
-    raw_datasets = load_dataset(path=ds_path, name=ds_name)
-    raw_train_dataset = raw_datasets['train']
-    MAX_SAMPLES = 100000000
-    train_limit = min(len(raw_train_dataset), MAX_SAMPLES)
-    raw_train_dataset = raw_train_dataset.select(range(train_limit))
-    if ds_name == 'mnist':
-        classes_per_client = 1 if num_clients == 10 else 2
-        client_datasets = extreme_non_iid_datasets(raw_train_dataset, num_clients, classes_per_client)
-        tok_client_datasets = []
-        for client_ds in client_datasets:
-            tok_ds = client_ds.rename_column("label", "labels")
-            tok_ds.set_format("torch", columns=["image", "labels"])
-            tok_client_datasets.append(tok_ds)
-        test_ds_formatted = raw_datasets['test'].rename_column("label", "labels")
-        test_ds_formatted.set_format("torch", columns=["image", "labels"])
-        client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, None, num_workers, pin_memory)
-        fed_ds = FederatedDataset(client_dataloaders)
-        test_ds = {'mnist': DataLoader(test_ds_formatted, batch_size=batch_size)}
-        return fed_ds, test_ds
-    raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
-    for split_name in raw_test_datasets.keys():
-        test_limit = min(len(raw_test_datasets[split_name]), MAX_SAMPLES)
-        raw_test_datasets[split_name] = raw_test_datasets[split_name].select(range(test_limit))
-    prior_distribution, num_labels = calculate_prior_distribution(raw_train_dataset)
-    if checkpoint in ['microsoft/deberta-v3-base', 'prajjwal1/bert-tiny']:
-        tokenizer = AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(checkpoint)
-    tokenize_fn = tokenize_function(ds_path, ds_name, tokenizer)
-    tok_raw_train_dataset = raw_train_dataset.map(tokenize_fn, batched=True)
-    client_datasets = federated_dirichlet_datasets(tok_raw_train_dataset, prior_distribution, num_clients, alpha)
-    expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
-    tok_client_datasets = []
-    for client_ds in client_datasets:
-        tok_ds = client_ds.rename_column("label", "labels")
-        columns_to_remove = [col for col in tok_ds.column_names if col not in expected_columns]
-        tok_ds = tok_ds.remove_columns(columns_to_remove)
-        tok_ds.set_format("torch")
-        tok_client_datasets.append(tok_ds)
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-    client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, data_collator, num_workers=num_workers, pin_memory=pin_memory)
-    fed_ds = FederatedDataset(client_dataloaders)
-    test_ds = {k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size) for k, v in raw_test_datasets.items()}
-    return fed_ds, test_ds
-def extreme_non_iid_datasets(raw_train_dataset, num_clients, classes_per_client):
-    import numpy as np
+            return {
+                'mnli_matched': raw_datasets['validation_matched'],
+                'mnli_mismatched': raw_datasets['validation_mismatched']
+            }
+        return {ds_name: raw_datasets['validation']}
+    return {ds_name: raw_datasets.get('test', raw_datasets.get('validation'))}
+
+
+def extreme_non_iid_datasets(raw_train_dataset: Dataset, num_clients: int, classes_per_client: int) -> List[Dataset]:
+    """
+    Partition dataset under strict class-exclusive allocation (e.g. exactly 1 or 2 classes per client).
+
+    Args:
+        raw_train_dataset (Dataset): Training dataset.
+        num_clients (int): Total number of clients (must match partition mapping).
+        classes_per_client (int): Number of distinct classes assigned per client.
+
+    Returns:
+        list of Dataset: Client partitions.
+
+    Raises:
+        ValueError: If partition configuration is unsupported.
+    """
     df = raw_train_dataset.to_pandas()
     num_classes = len(df['label'].unique())
     client_datasets = []
+
     if num_clients == 10 and classes_per_client == 1:
         classes_assigned = [[i] for i in range(10)]
     elif num_clients == 5 and classes_per_client == 2:
-        classes_assigned = [[2*i, 2*i+1] for i in range(5)]
+        classes_assigned = [[2 * i, 2 * i + 1] for i in range(5)]
     else:
-        raise ValueError("Unsupported non-IID configuration.")
+        raise ValueError(f"Unsupported extreme non-IID config: {num_clients} clients with {classes_per_client} classes/client.")
+
     samples_per_client = len(raw_train_dataset) // num_clients
     samples_per_class_per_client = samples_per_client // classes_per_client
     label_indices = {label: df.index[df['label'] == label].tolist() for label in range(num_classes)}
+
     for client_classes in classes_assigned:
         client_indices = []
         for c in client_classes:
@@ -257,90 +283,211 @@ def extreme_non_iid_datasets(raw_train_dataset, num_clients, classes_per_client)
             label_indices[c] = label_indices[c][samples_per_class_per_client:]
             client_indices.extend(idx_to_take)
         client_datasets.append(raw_train_dataset.select(client_indices))
+
     return client_datasets
+
+
+def prepare_federated_datasets(
+    ds_path: str,
+    ds_name: str,
+    checkpoint: str,
+    num_clients: int,
+    alpha: float,
+    batch_size: int,
+    num_workers: int = 0,
+    pin_memory: bool = False
+) -> Tuple['FederatedDataset', Dict[str, DataLoader]]:
+    """
+    End-to-end dataset pipeline: loading, Dirichlet/extreme partitioning, tokenization, and loader construction.
+
+    Args:
+        ds_path (str): Dataset repository path (e.g. 'glue', 'mnist').
+        ds_name (str): Task name (e.g. 'mrpc', 'sst2', 'mnist').
+        checkpoint (str): Pretrained backbone model name or path.
+        num_clients (int): Number of federated clients.
+        alpha (float): Dirichlet distribution alpha.
+        batch_size (int): Local mini-batch size.
+        num_workers (int): Background DataLoader workers.
+        pin_memory (bool): Enable pinned CUDA host memory.
+
+    Returns:
+        tuple: (FederatedDataset, test_dataloader_dict)
+    """
+    raw_datasets = load_dataset(path=ds_path, name=ds_name)
+    raw_train_dataset = raw_datasets['train']
+
+    MAX_SAMPLES = 100000000
+    train_limit = min(len(raw_train_dataset), MAX_SAMPLES)
+    raw_train_dataset = raw_train_dataset.select(range(train_limit))
+
+    # Fast-path handling for MNIST image datasets
+    if ds_name == 'mnist':
+        classes_per_client = 1 if num_clients == 10 else 2
+        client_datasets = extreme_non_iid_datasets(raw_train_dataset, num_clients, classes_per_client)
+        tok_client_datasets = []
+        for client_ds in client_datasets:
+            tok_ds = client_ds.rename_column("label", "labels") if "label" in client_ds.column_names else client_ds
+            tok_ds.set_format("torch", columns=["image", "labels"])
+            tok_client_datasets.append(tok_ds)
+
+        test_ds_formatted = raw_datasets['test']
+        if "label" in test_ds_formatted.column_names:
+            test_ds_formatted = test_ds_formatted.rename_column("label", "labels")
+        test_ds_formatted.set_format("torch", columns=["image", "labels"])
+
+        client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, None, num_workers, pin_memory)
+        fed_ds = FederatedDataset(client_dataloaders)
+        test_ds = {'mnist': DataLoader(test_ds_formatted, batch_size=batch_size)}
+        return fed_ds, test_ds
+
+    # Standard NLP pipeline with Hugging Face Tokenizers
+    raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
+    for split_name in raw_test_datasets.keys():
+        test_limit = min(len(raw_test_datasets[split_name]), MAX_SAMPLES)
+        raw_test_datasets[split_name] = raw_test_datasets[split_name].select(range(test_limit))
+
+    prior_distribution, _ = calculate_prior_distribution(raw_train_dataset)
+
+    if checkpoint in ['microsoft/deberta-v3-base', 'prajjwal1/bert-tiny']:
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+    tokenize_fn = tokenize_function(ds_path, ds_name, tokenizer)
+    tok_raw_train_dataset = raw_train_dataset.map(tokenize_fn, batched=True)
+    client_datasets = federated_dirichlet_datasets(tok_raw_train_dataset, prior_distribution, num_clients, alpha)
+
+    expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
+    tok_client_datasets = []
+    for client_ds in client_datasets:
+        tok_ds = client_ds.rename_column("label", "labels") if "label" in client_ds.column_names else client_ds
+        columns_to_remove = [col for col in tok_ds.column_names if col not in expected_columns]
+        tok_ds = tok_ds.remove_columns(columns_to_remove)
+        tok_ds.set_format("torch")
+        tok_client_datasets.append(tok_ds)
+
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    client_dataloaders = create_client_dataloaders(
+        tok_client_datasets, batch_size, data_collator, num_workers=num_workers, pin_memory=pin_memory
+    )
+    fed_ds = FederatedDataset(client_dataloaders)
+    test_ds = {k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size) for k, v in raw_test_datasets.items()}
+
+    return fed_ds, test_ds
+
+
 class FederatedDataset:
     """
-    A class to handle federated datasets for training in a federated learning setup.
-    This class encapsulates the logic for managing multiple client dataloaders and providing
-    batched data for federated learning training loops.
-    Args:
-        client_dataloaders (list of DataLoader): A list of DataLoader objects, each corresponding to a client's dataset.
+    Encapsulates collection of client DataLoaders with cyclic batch generation.
+
+    Attributes:
+        client_dataloaders (list of DataLoader): Per-client PyTorch DataLoader instances.
+        client_batch_generators (list of Generator): Infinite generator streams for each client.
     """
-    def __init__(self, client_dataloaders):
+
+    def __init__(self, client_dataloaders: List[DataLoader]):
+        """
+        Initialize the federated dataset wrapper.
+
+        Args:
+            client_dataloaders (list of DataLoader): DataLoader instances for each partitioned client.
+        """
         self.client_dataloaders = client_dataloaders
         self.client_batch_generators = [
             self.dataloader_batch_generator(client_dl)
             for client_dl in client_dataloaders
         ]
-    def epoch_steps(self, client_ids):
+
+    def epoch_steps(self, client_ids: List[int]) -> int:
         """
-        Determine the number of steps (batches) in an epoch for the given clients.
+        Calculate maximum mini-batch steps per local epoch across a group of clients.
+
         Args:
-            client_ids (list of int): A list of client IDs.
+            client_ids (list of int): Client IDs participating in the round.
+
         Returns:
-            int: The maximum number of steps (batches) for the given clients.
+            int: Maximum step count across the provided clients.
         """
-        return max(
-            len(self.client_dataloaders[client_id])
-            for client_id in client_ids
-        )
-    def next_client_batch(self, client_id):
+        return max(len(self.client_dataloaders[client_id]) for client_id in client_ids)
+
+    def next_client_batch(self, client_id: int) -> Dict[str, torch.Tensor]:
         """
-        Retrieve the next batch of data for the specified client.
+        Fetch the next mini-batch of tensors for a specific client.
+
         Args:
-            client_id (int): The ID of the client.
+            client_id (int): Client index.
+
         Returns:
-            dict: A batch of data from the client's DataLoader.
+            dict: Batch dictionary of input and label tensors.
         """
-        return next(
-            self.client_batch_generators[client_id]
-        )
+        return next(self.client_batch_generators[client_id])
+
     @staticmethod
-    def dataloader_batch_generator(dataloader):
+    def dataloader_batch_generator(dataloader: DataLoader) -> Generator[Dict[str, torch.Tensor], None, None]:
         """
-        A generator that yields (unending) batches of data from a DataLoader.
+        Create an infinite cyclic generator yielding batches from a DataLoader.
+
         Args:
-            dataloader (DataLoader): A DataLoader object.
+            dataloader (DataLoader): PyTorch DataLoader.
+
         Yields:
-            dict: A batch of data from the DataLoader.
+            dict: Next mini-batch dictionary.
         """
         while True:
             for batch in dataloader:
                 yield batch
+
+
 class ClientSampler:
     """
-    A class that helps random sampling of clients in each round.
+    Uniform client sampler ensuring equal round participation without replacement.
+
     Attributes:
-        client_ids (list): A list of client IDs to be sampled.
-        sample_size (int): The size of each group of sampled client IDs.
-        num_clients (int): The total number of clients.
-        client_sample_generator (generator): A generator that yields groups of client IDs.
+        client_ids (list of int): Pool of available client indices.
+        sample_size (int): Number of clients sampled per round.
+        num_clients (int): Total size of the client pool.
+        client_sample_generator (Generator): Infinite generator yielding client ID batches.
     """
-    def __init__(self, client_ids, sample_size):
+
+    def __init__(self, client_ids: List[int], sample_size: int):
+        """
+        Initialize the client sampler.
+
+        Args:
+            client_ids (list of int): Complete list of client IDs.
+            sample_size (int): Number of clients sampled per communication round.
+
+        Raises:
+            ValueError: If total client count is not evenly divisible by sample size.
+        """
         self.client_ids = client_ids
         self.sample_size = sample_size
         self.num_clients = len(client_ids)
         if self.num_clients % self.sample_size != 0:
-            raise ValueError("The number of clients must be divisible with the sample size.")
+            raise ValueError(f"Number of clients ({self.num_clients}) must be divisible by sample size ({self.sample_size}).")
         self.client_sample_generator = self.sample_generator()
-    def sample(self):
+
+    def sample(self) -> List[int]:
         """
-        Returns the next group of sampled client IDs.
+        Retrieve the next randomly sampled group of client IDs for a communication round.
+
         Returns:
-            list: A list of sampled client IDs of length `sample_size`.
+            list of int: Sampled client indices of length `sample_size`.
         """
         return next(self.client_sample_generator)
-    def sample_generator(self):
+
+    def sample_generator(self) -> Generator[List[int], None, None]:
         """
-        A generator function to continuously generate groups of sampled client IDs.
-        This function shuffles the client IDs and partitions them into groups of the specified sample size.
-        It yields each group of sampled client IDs.
+        Infinite generator yielding shuffled, non-overlapping client partitions.
+
         Yields:
-            list: A list of sampled client IDs of length `sample_size`.
+            list of int: Next group of sampled client IDs.
         """
         while True:
             shuffled_client_ids = random.sample(self.client_ids, self.num_clients)
-            groups = [shuffled_client_ids[i:i + self.sample_size] for i in range(0, self.num_clients, self.sample_size)]
+            groups = [
+                shuffled_client_ids[i:i + self.sample_size]
+                for i in range(0, self.num_clients, self.sample_size)
+            ]
             for sampled_client_ids in groups:
                 yield sampled_client_ids
-
