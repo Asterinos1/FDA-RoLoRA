@@ -1,15 +1,27 @@
-from fdaopt.utils import torch
-def get_opt_hyperparams(where, hyperparams):
+"""
+Optimizer factory and parameter grouping utilities for federated training.
+
+Provides routines to dynamically instantiate PyTorch server and client optimizers
+with support for differential learning rates between low-rank adapter matrices (LoRA)
+and dense classification head layers.
+"""
+
+from typing import List, Dict, Any, Tuple, Optional, Type
+import torch
+from fdaopt.utils import torch as utils_torch
+
+
+def get_opt_hyperparams(where: str, hyperparams: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Extracts optimizer hyperparameters from the given hyperparameters dictionary.
+    Extract optimizer keyword arguments from the experiment hyperparameter dictionary.
+
     Args:
-        where (str): A prefix indicating whether the optimizer is 'server' or 'client'.
-        hyperparams (dict): A dictionary containing hyperparameters including optimizer hyperparameters. It is
-            expected it contains `server_opt_name` and `client_opt_name`. The rest of the optimizer hyperparameters
-            are expected to have keys `server_opt_HYPERPARAM` or `client_opt_HYPERPARAM` where the HYPERPARAM is
-            a valid optimizer hyperparameter (for example, `lr`).
+        where (str): Scope prefix, either 'server' or 'client'.
+        hyperparams (dict): Experiment configuration dictionary containing keys like
+            'server_opt_lr', 'client_opt_momentum', etc.
+
     Returns:
-        dict: A dictionary containing the extracted optimizer hyperparameters.
+        dict: Clean dictionary of kwargs stripped of scope prefixes (e.g. {'lr': 0.01}).
     """
     opt_dict = {}
     where_opt = f"{where}_opt"
@@ -19,33 +31,52 @@ def get_opt_hyperparams(where, hyperparams):
             if param != 'name':
                 opt_dict[param] = v
     return opt_dict
-def get_optimizer_class(optimizer_name):
+
+
+def get_optimizer_class(optimizer_name: str) -> Type[torch.optim.Optimizer]:
     """
-    Dynamically imports and returns the optimizer class from torch.optim based on the given optimizer name.
+    Dynamically resolve and return a PyTorch optimizer class by string name.
+
     Args:
-        optimizer_name (str): The name of the optimizer class as a string.
+        optimizer_name (str): Name of the optimizer class (e.g. 'AdamW', 'SGD', 'Adam').
+
     Returns:
-        type: The optimizer class from torch.optim.
+        Type[torch.optim.Optimizer]: The corresponding class from `torch.optim`.
     """
     optimizer_class = getattr(torch.optim, optimizer_name)
     return optimizer_class
-def server_client_optimizers(train_params, hyperparams, num_lora_params=None):
+
+
+def server_client_optimizers(
+    train_params: List[torch.nn.Parameter],
+    hyperparams: Dict[str, Any],
+    num_lora_params: Optional[int] = None
+) -> Tuple[torch.optim.Optimizer, torch.optim.Optimizer]:
     """
-    Creates and returns the server and client optimizers based on the provided hyperparameters.
+    Construct separate server and client optimizer instances based on experiment configuration.
+
+    If `num_lora_params` is provided and smaller than `len(train_params)`, differential
+    learning rates are applied to client optimization: LoRA parameters receive the base
+    client learning rate, while non-LoRA parameters (e.g. classification head) receive
+    a 10x smaller learning rate (`0.1 * base_lr`) to maintain head stability.
+
     Args:
-        train_params (list of torch.nn.Parameter): The parameters of the model to be optimized.
-        hyperparams (dict): A dictionary containing hyperparameters including optimizer hyperparameters. It is
-            expected it contains `server_opt_name` and `client_opt_name`. The rest of the optimizer hyperparameters
-            are expected to have keys `server_opt_HYPERPARAM` or `client_opt_HYPERPARAM` where the HYPERPARAM is
-            a valid optimizer hyperparameter (for example, `lr`).
+        train_params (list of torch.nn.Parameter): Trainable model parameters.
+        hyperparams (dict): Hyperparameter dictionary containing optimizer specifications.
+        num_lora_params (Optional[int]): Number of initial parameters belonging to LoRA matrices.
+
     Returns:
-        tuple: A tuple containing the server optimizer and the client optimizer.
+        tuple: (server_optimizer, client_optimizer)
     """
     server_opt_class = get_optimizer_class(hyperparams['server_opt_name'])
     client_opt_class = get_optimizer_class(hyperparams['client_opt_name'])
     server_kwargs = get_opt_hyperparams('server', hyperparams)
     client_kwargs = get_opt_hyperparams('client', hyperparams)
+
+    # Server optimizer updates global aggregated parameters
     server_opt = server_opt_class(train_params, **server_kwargs)
+
+    # Client optimizer with optional differential LR for LoRA vs. Dense head
     if num_lora_params is not None and num_lora_params < len(train_params):
         client_lr = client_kwargs.pop('lr', 0.01)
         client_groups = [
@@ -55,5 +86,5 @@ def server_client_optimizers(train_params, hyperparams, num_lora_params=None):
         client_opt = client_opt_class(client_groups, **client_kwargs)
     else:
         client_opt = client_opt_class(train_params, **client_kwargs)
-    return server_opt, client_opt
 
+    return server_opt, client_opt
