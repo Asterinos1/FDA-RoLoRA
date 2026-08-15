@@ -1,7 +1,6 @@
 from fdaopt import utils
 from fdaopt.models.ops import copy_parameters
-import torch # NEW: Ensure torch is imported for argmax
-
+import torch
 def federated_training_step(model, train_params, client_train_params_dict, client_opt, fed_ds):
     """
     Performs a single federated training step.
@@ -39,7 +38,6 @@ def federated_training_step(model, train_params, client_train_params_dict, clien
         training_loss += loss.item()
     training_loss = training_loss / num_clients
     return training_loss
-
 def client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds, client_id, round_steps):
     """
     Trains a client-specific model for a specified number of steps (a round).
@@ -61,31 +59,26 @@ def client_round_train(model, train_params, client_train_params_dict, client_opt
         to_params=train_params
     )
     training_loss = 0.0
-    correct_predictions = 0   # NEW: Track correct predictions
-    total_predictions = 0     # NEW: Track total samples
-    
+    correct_predictions = 0
+    total_predictions = 0
     for step in range(round_steps):
         batch = fed_ds.next_client_batch(client_id)
         batch = {k: v.to(utils.DEVICE) for k, v in batch.items()}
         outputs = model(**batch)
         loss = outputs.loss
-        logits = outputs.logits # NEW: Extract logits for accuracy calculation
-        
-        # NEW: Calculate training accuracy during the forward pass
+        logits = outputs.logits
         predictions = torch.argmax(logits, dim=-1)
         correct_predictions += (predictions == batch["labels"]).sum().item()
         total_predictions += batch["labels"].size(0)
-
         loss.backward()
         client_opt.step()
         client_opt.zero_grad()
         training_loss += loss.item()
-        
     copy_parameters(
         from_params=train_params,
         to_params=client_train_params_dict[client_id]
     )
     training_loss = training_loss / round_steps
-    train_accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0 # NEW: Calculate ratio
-    
-    return training_loss, train_accuracy # NEW: Return both metrics
+    train_accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+    return training_loss, train_accuracy
+

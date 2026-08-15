@@ -2,14 +2,13 @@ from fdaopt import utils
 import torch
 import evaluate
 import math
-
+_METRICS_CACHE = {}
 def get_save_device():
     if utils.DEVICE_RAM_PROGRAM == 'performance':
         return utils.DEVICE
     elif utils.DEVICE_RAM_PROGRAM == 'moderate' or utils.DEVICE_RAM_PROGRAM == 'low':
         return 'cpu'
     return 'cpu'
-
 @torch.no_grad
 def copy_parameters(from_params, to_params):
     """
@@ -24,7 +23,6 @@ def copy_parameters(from_params, to_params):
     for from_param, to_param in zip(from_params, to_params):
         device = to_param.device
         to_param.copy_(from_param.to(device))
-
 @torch.no_grad
 def average_client_parameters(client_train_params_dict):
     """
@@ -45,7 +43,6 @@ def average_client_parameters(client_train_params_dict):
             for param, avg_param in zip(train_params, average_params):
                 avg_param.add_(param.to(utils.DEVICE) / num_clients)
     return average_params
-
 @torch.no_grad
 def average_client_parameters2(client_train_params_dict):
     """
@@ -64,41 +61,50 @@ def average_client_parameters2(client_train_params_dict):
         for param_list in zip(*client_train_params_dict.values())
     ]
     return average_params
-
 @torch.no_grad
 def compute_metrics(model, ds_path, ds_name, test_ds_dict):
-    """
-    Computes evaluation metrics for the given model on the test dataset.
-    This function evaluates the model on the provided test dataset and computes
-    metrics using the `evaluate` library. The `@torch.no_grad` decorator ensures
-    that the evaluation is performed without tracking gradients, which saves memory
-    and computation.
-    Args:
-        model (torch.nn.Module): The model to be evaluated.
-        ds_path (str): The path or identifier of the dataset. This is used to load the appropriate evaluation metric.
-        ds_name (str): The name of the specific dataset configuration. This helps in loading the correct evaluation metric.
-        test_ds_dict (Dict): A dictionary with key the name of the test_ds and value the DataLoader for this test dataset.
-    Returns:
-        dict: A dictionary containing the computed evaluation metrics.
-    """
     def _compute_metrics(_model, _ds_path, _config_name, _test_ds):
-        metric = evaluate.load(path=_ds_path, config_name=_config_name)
+        is_mnist = 'mnist' in _ds_path or 'mnist' in _config_name
+        if not is_mnist:
+            cache_key = f"{_ds_path}_{_config_name}"
+            if cache_key not in _METRICS_CACHE:
+                actual_metric_path = "glue" if "glue" in _ds_path else _ds_path
+                _METRICS_CACHE[cache_key] = evaluate.load(
+                    path=actual_metric_path,
+                    config_name=_config_name,
+                    keep_in_memory=True
+                )
+            metric = _METRICS_CACHE[cache_key]
         testing_loss = 0.0
+        correct_predictions = 0
+        total_predictions = 0
         num_batches = len(_test_ds)
         _model.eval()
         for batch in _test_ds:
-            batch = {k: v.to(utils.DEVICE) for k, v in batch.items()}
+            batch = {key: value.to(utils.DEVICE) for key, value in batch.items()}
             outputs = _model(**batch)
-            loss = outputs.loss
-            logits = outputs.logits
-            predictions = torch.argmax(logits, dim=-1)
-            metric.add_batch(predictions=predictions, references=batch["labels"])
-            testing_loss += loss.item()
+            predictions = torch.argmax(outputs.logits, dim=-1)
+            testing_loss += outputs.loss.item()
+            if is_mnist:
+                correct_predictions += (
+                    predictions == batch["labels"]
+                ).sum().item()
+                total_predictions += batch["labels"].size(0)
+            else:
+                metric.add_batch(
+                    predictions=predictions,
+                    references=batch["labels"]
+                )
         average_test_loss = testing_loss / num_batches
+        if is_mnist:
+            return {
+                "accuracy": correct_predictions / total_predictions,
+                "testing_loss": average_test_loss
+            }
         metrics = metric.compute()
-        metrics['testing_loss'] = average_test_loss
+        metrics["testing_loss"] = average_test_loss
         return metrics
-    if ds_path == 'glue':
+    if ds_path == 'glue' or ds_path == 'nyu-mll/glue':
         if ds_name == 'mnli':
             metrics_m = _compute_metrics(model, ds_path, 'mnli_matched', test_ds_dict['mnli_matched'])
             metrics_m = {k + "_m": v for k, v in metrics_m.items()}
@@ -107,7 +113,9 @@ def compute_metrics(model, ds_path, ds_name, test_ds_dict):
             return {**metrics_m, **metrics_mm}
         else:
             return _compute_metrics(model, ds_path, ds_name, test_ds_dict[ds_name])
-
+    else:
+        target_name = ds_name if ds_name in test_ds_dict else list(test_ds_dict.keys())[0]
+        return _compute_metrics(model, ds_path, target_name, test_ds_dict[target_name])
 @torch.no_grad
 def compute_drifts(old_params, new_params):
     """
@@ -126,7 +134,6 @@ def compute_drifts(old_params, new_params):
             (new_param - old_param).to(get_save_device())
         )
     return drifts
-
 @torch.no_grad
 def compute_client_drifts(old_params, client_train_params_dict):
     """
@@ -141,7 +148,6 @@ def compute_client_drifts(old_params, client_train_params_dict):
         client_id: compute_drifts(old_params, client_params)
         for client_id, client_params in client_train_params_dict.items()
     }
-
 @torch.no_grad
 def compute_pseudo_gradients(client_drifts):
     """
@@ -154,7 +160,6 @@ def compute_pseudo_gradients(client_drifts):
     average_drifts = average_client_parameters(client_drifts)
     pseudo_gradient = [-drift for drift in average_drifts]
     return pseudo_gradient
-
 @torch.no_grad
 def set_gradients(train_params, gradients):
     """
@@ -168,7 +173,6 @@ def set_gradients(train_params, gradients):
         device = param.device
         gradient = gradient.to(device)
         param.grad = gradient
-
 @torch.no_grad
 def vectorize(parameters):
     """
@@ -184,7 +188,6 @@ def vectorize(parameters):
         param = param.to(utils.DEVICE)
         con.append(param.view(-1))
     return torch.cat(con)
-
 @torch.no_grad()
 def get_ksi_unit(w_t0, w_tminus1, generator=None):
     """
@@ -195,7 +198,6 @@ def get_ksi_unit(w_t0, w_tminus1, generator=None):
     total_norm_sq = 0.0
     if w_tminus1 is None:
         for param in w_t0:
-            # Use torch.randn and pass shape/dtype explicitly since randn_like doesn't take generator
             rand_tensor = torch.randn(param.shape, dtype=param.dtype, device=utils.DEVICE, generator=generator)
             ksi_tensors.append(rand_tensor)
             total_norm_sq += torch.sum(rand_tensor ** 2).item()
@@ -209,32 +211,23 @@ def get_ksi_unit(w_t0, w_tminus1, generator=None):
         for ksi_tensor in ksi_tensors:
             ksi_tensor.div_(norm)
     return ksi_tensors
-
 @torch.no_grad()
 def linear_variance_approx(client_drifts, ksi_vector):
     """
     Computes variance approximation iteratively without vectorizing,
     saving significant VRAM and preventing memory fragmentation.
     """
-    # BUG FIX: Compute the full L2 norm squared of the average drift vector instead of a 1D projection.
-    # This prevents the mathematical overestimation of variance that forces catastrophic overtraining.
     num_clients = len(client_drifts)
     sum_sq_norms = 0.0
-    
-    # S_1: Expected squared norm
     for drifts in client_drifts.values():
         norm_sq_drift = 0.0
         for drift_param in drifts:
             norm_sq_drift += torch.sum(drift_param.to(utils.DEVICE) ** 2).item()
         sum_sq_norms += norm_sq_drift
-        
     S_1 = sum_sq_norms / num_clients
-    
-    # S_2: Squared norm of expected drift
     S_2_sq = 0.0
     first_client_id = list(client_drifts.keys())[0]
     num_params = len(client_drifts[first_client_id])
-    
     for param_idx in range(num_params):
         avg_param = None
         for client_id, drifts in client_drifts.items():
@@ -243,10 +236,7 @@ def linear_variance_approx(client_drifts, ksi_vector):
             else:
                 avg_param.add_(drifts[param_idx].to(utils.DEVICE) / num_clients)
         S_2_sq += torch.sum(avg_param ** 2).item()
-        
     return S_1 - S_2_sq
-
-
 def linear_variance_approx2(client_drifts, global_current, global_prev):
     """
     Memory-efficient 1:1 port of the FedL-Sync-FDA linear variance approximation.
@@ -257,25 +247,17 @@ def linear_variance_approx2(client_drifts, global_current, global_prev):
     Returns:
         float: The estimated variance.
     """
-    # BUG FIX: Compute the full L2 norm squared of the average drift vector instead of a 1D projection.
-    # This prevents the mathematical overestimation of variance that forces catastrophic overtraining.
     num_clients = len(client_drifts)
     if num_clients == 0: return 0.0
     sum_sq_norms = 0.0
-    
-    # S_1: Expected squared norm
     for delta_i in client_drifts:
         client_sq_norm = 0.0
         for k in delta_i.keys():
             client_sq_norm += torch.sum(delta_i[k] ** 2).item()
         sum_sq_norms += client_sq_norm
-        
     S_1 = sum_sq_norms / num_clients
-    
-    # S_2: Squared norm of expected drift
     S_2_sq = 0.0
     keys = client_drifts[0].keys()
-    
     for k in keys:
         avg_k = None
         for delta_i in client_drifts:
@@ -284,10 +266,8 @@ def linear_variance_approx2(client_drifts, global_current, global_prev):
             else:
                 avg_k.add_(delta_i[k] / num_clients)
         S_2_sq += torch.sum(avg_k ** 2).item()
-    
     variance_approx = S_1 - S_2_sq
     return variance_approx
-
 def get_ksi_unit2(global_current, global_prev):
     """
     Generates the projection vector ksi as the normalized difference
@@ -312,7 +292,6 @@ def get_ksi_unit2(global_current, global_prev):
         for k in ksi.keys():
             ksi[k] = ksi[k] / diff_norm
     return ksi
-
 @torch.no_grad
 def variance(client_drifts):
     """
@@ -333,7 +312,6 @@ def variance(client_drifts):
     norm_sq_avg_drift = torch.dot(avg_drift_vec, avg_drift_vec)
     var = avg_norm_sq_drifts - norm_sq_avg_drift
     return var.item(), avg_norm_sq_drifts.item(), norm_sq_avg_drift.item()
-
 def fda_sketch_estimation(client_drifts, ams_sketch):
     """
     Compute the linear estimation of ||avg(u_t)||^2 using SketchFDA. The way we compute it is by its equivalent form
@@ -351,7 +329,6 @@ def fda_sketch_estimation(client_drifts, ams_sketch):
     epsilon = ams_sketch.epsilon
     est = (1 / (1+epsilon)) * ams_sketch.estimate_euc_norm_squared(sk)
     return est
-
 def fda_variance_approx(client_drifts, ams_sketch=None):
     norm_sq_drifts = []
     for drifts in client_drifts.values():
@@ -362,29 +339,25 @@ def fda_variance_approx(client_drifts, ams_sketch=None):
     norm_sq_avg_drift_approx = fda_sketch_estimation(client_drifts, ams_sketch)
     var_approx = avg_norm_sq_drifts - norm_sq_avg_drift_approx
     return var_approx.item()
-
 @torch.no_grad
 def get_updated_client_parameters(client_train_params_dict, sampled_clients, params):
     """
-    Update the parameters of the sampled clients with the current global parameters.
-    This function ensures there are no ID collisions or overwriting issues by creating a new dictionary
-    for the updated client parameters.
-    Args:
-        client_train_params_dict (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
-        sampled_clients (list): A list of newly sampled client IDs.
-        params (list of torch.nn.Parameter): The current global parameters to be assigned to the sampled clients.
-    Returns:
-        dict: Dictionary where keys are client IDs and values are lists of parameter tensors.
-    """
-    new_client_train_params_dict = dict()
-    for new_client_id, old_params in zip(sampled_clients, client_train_params_dict.values()):
+      Update the parameters of the sampled clients with the current global parameters.
+      This function ensures there are no ID collisions or overwriting issues by creating a new dictionary
+      for the updated client parameters.
+      Args:
+          client_train_params_dict (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
+          sampled_clients (list): A list of newly sampled client IDs.
+          params (list of torch.nn.Parameter): The current global parameters to be assigned to the sampled clients.
+      Returns:
+          dict: Dictionary where keys are client IDs and values are lists of parameter tensors.
+      """
+    for client_id in sampled_clients:
         copy_parameters(
             from_params=params,
-            to_params=old_params
+            to_params=client_train_params_dict[client_id]
         )
-        new_client_train_params_dict[new_client_id] = old_params
-    return new_client_train_params_dict
-
+    return client_train_params_dict
 def stop_training_with_threshold(hyperparams, metrics):
     if hyperparams['checkpoint'] == 'roberta-base':
         if hyperparams['ds_name'] == 'mrpc':
@@ -407,7 +380,6 @@ def stop_training_with_threshold(hyperparams, metrics):
             if metrics['accuracy_m'] >= 0.906 * 0.99 and metrics['accuracy_mm'] >= 0.907 * 0.99:
                 return True
     return False
-
 def get_target_metric_value(ds_name, metrics):
     """Extracts the primary evaluation metric based on the dataset."""
     if ds_name == 'cola':
@@ -415,34 +387,37 @@ def get_target_metric_value(ds_name, metrics):
     elif ds_name == 'mnli':
         return (metrics.get('accuracy_m', 0.0) + metrics.get('accuracy_mm', 0.0)) / 2.0
     return metrics.get('accuracy', 0.0)
-
 def check_dynamic_early_stopping(hyperparams, metrics_history):
-    """
-    Dynamically halts training on plateaus or high-variance jittering.
-    """
     patience = hyperparams.get('early_stopping_patience', 10)
     min_delta = hyperparams.get('early_stopping_min_delta', 0.005)
     window_size = hyperparams.get('early_stopping_window', 3)
-
-    if len(metrics_history) < patience + window_size:
+    plateau_min_acc = hyperparams.get('plateau_min_accuracy', 0.90)
+    stagnation_round = hyperparams.get('stagnation_round', 40)
+    stagnation_tolerance = hyperparams.get('stagnation_tolerance', 0.05)
+    if not metrics_history:
         return False
-
     values = [get_target_metric_value(hyperparams['ds_name'], m) for m in metrics_history]
-
-    # Apply Simple Moving Average to smooth out extreme jitter
+    current_round = len(values)
+    if current_round >= stagnation_round:
+        initial_acc = sum(values[:3]) / 3.0 if current_round >= 3 else values[0]
+        current_max = max(values[:stagnation_round])
+        if current_max - initial_acc < stagnation_tolerance:
+            return True
+    if current_round < window_size:
+        return False
     smoothed_values = [
         sum(values[i:i+window_size]) / window_size
-        for i in range(len(values) - window_size + 1)
+        for i in range(current_round - window_size + 1)
     ]
-
     best_value = -float('inf')
     rounds_without_improvement = 0
-
     for val in smoothed_values:
         if val > best_value + min_delta:
             best_value = val
             rounds_without_improvement = 0
         else:
             rounds_without_improvement += 1
+    if best_value >= plateau_min_acc and rounds_without_improvement >= patience:
+        return True
+    return False
 
-    return rounds_without_improvement >= patience
