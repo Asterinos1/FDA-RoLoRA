@@ -1,5 +1,4 @@
 from fdaopt.utils import np, random, DataLoader, AutoTokenizer, DataCollatorWithPadding, load_dataset
-
 def calculate_prior_distribution(raw_train_dataset):
     """
     Calculate the prior distribution of labels in the training dataset.
@@ -18,7 +17,6 @@ def calculate_prior_distribution(raw_train_dataset):
     prior_distribution = np.array([c / n for _, c in label_count_tuple])
     num_labels = len(label_count_dict)
     return prior_distribution, num_labels
-
 def sample_to_client(client_sample_counts, sample_label):
     """
     Assign a sample to a client based on the sample's label and the remaining counts for each client.
@@ -44,7 +42,6 @@ def sample_to_client(client_sample_counts, sample_label):
     client_idx = np.argmax(client_sample_counts[:, sample_label])
     client_sample_counts[client_idx][sample_label] -= 1
     return client_idx
-
 def federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha):
     """
     Create federated datasets using Dirichlet-distributed label partitions.
@@ -76,7 +73,6 @@ def federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clie
         client_dataset = raw_train_dataset.select(client_indices)
         client_datasets.append(client_dataset)
     return client_datasets
-
 def tokenize_client_datasets(client_datasets, tokenize_fn):
     """
     Tokenize and preprocess a list of client datasets.
@@ -102,7 +98,6 @@ def tokenize_client_datasets(client_datasets, tokenize_fn):
         tok_client_dataset.set_format("torch")
         tok_client_datasets.append(tok_client_dataset)
     return tok_client_datasets
-
 def preprocess_test_dataset(raw_test_dataset, tokenize_fn, data_collator, batch_size):
     """
     Preprocess and tokenize the test dataset, then create a DataLoader for it.
@@ -130,7 +125,6 @@ def preprocess_test_dataset(raw_test_dataset, tokenize_fn, data_collator, batch_
         tok_test_dataset, batch_size=batch_size, collate_fn=data_collator
     )
     return test_ds
-
 def create_client_dataloaders(tok_client_datasets, batch_size, collate_fn, num_workers=0, pin_memory=False):
     """
     Create data loaders for a list of tokenized client datasets.
@@ -152,7 +146,6 @@ def create_client_dataloaders(tok_client_datasets, batch_size, collate_fn, num_w
         )
         client_dataloaders.append(client_dataloader)
     return client_dataloaders
-
 def tokenize_function(ds_path, ds_name, tokenizer):
     """
     Return a tokenization function based on the dataset path and name.
@@ -165,22 +158,22 @@ def tokenize_function(ds_path, ds_name, tokenizer):
     Returns:
         function: A tokenization function.
     """
-    if ds_path == "glue" and ds_name == "mrpc":
-        return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
-    if ds_path == "glue" and ds_name == "rte":
-        return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
-    if ds_path == "glue" and ds_name == "stsb":
-        return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
-    if ds_path == "glue" and ds_name == "cola":
-        return lambda example: tokenizer(example["sentence"], truncation=True)
-    if ds_path == "glue" and ds_name == "sst2":
-        return lambda example: tokenizer(example["sentence"], truncation=True)
-    if ds_path == "glue" and ds_name == "qnli":
-        return lambda example: tokenizer(example["question"], example["sentence"], truncation=True)
-    if ds_path == "glue" and ds_name == "mnli":
-        return lambda example: tokenizer(example["premise"], example["hypothesis"], truncation=True)
+    if ds_path == "glue" or ds_path == "nyu-mll/glue":
+        if ds_name == "mrpc":
+            return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
+        if ds_name == "rte":
+            return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
+        if ds_name == "stsb":
+            return lambda example: tokenizer(example["sentence1"], example["sentence2"], truncation=True)
+        if ds_name == "cola":
+            return lambda example: tokenizer(example["sentence"], truncation=True)
+        if ds_name == "sst2":
+            return lambda example: tokenizer(example["sentence"], truncation=True)
+        if ds_name == "qnli":
+            return lambda example: tokenizer(example["question"], example["sentence"], truncation=True)
+        if ds_name == "mnli":
+            return lambda example: tokenizer(example["premise"], example["hypothesis"], truncation=True)
     return None
-
 def test_dataset_split(raw_datasets, ds_path, ds_name):
     """
     Split the raw dataset into the appropriate test set.
@@ -192,37 +185,33 @@ def test_dataset_split(raw_datasets, ds_path, ds_name):
     Returns:
         Dictionary with key the name of the test ds and value a datasets.Dataset from the extracted test dataset split.
     """
-    if ds_path == 'glue':
+    if ds_path == 'nyu-mll/glue' or ds_path == 'glue':
         if ds_name == 'mnli':
             return {'mnli_matched': raw_datasets['validation_matched'],
                     'mnli_mismatched': raw_datasets['validation_mismatched']}
         else:
             return {ds_name: raw_datasets['validation']}
-
 def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha, batch_size, num_workers=0, pin_memory=False):
-    """
-    Prepare federated datasets and create corresponding DataLoaders.
-    This function handles the entire process of loading the raw dataset, partitioning it into
-    training federated datasets using Dirichlet distribution, tokenizing the datasets, and creating
-    DataLoaders for each client's dataset. It also tokenizes, and creates a dataloader for the test dataset.
-    Args:
-        ds_path (str): The path or identifier of the dataset.
-        ds_name (str): The name of the dataset.
-        checkpoint (str): The checkpoint identifier for the tokenizer.
-        num_clients (int): The number of clients.
-        alpha (float): The concentration parameter for the Dirichlet distribution.
-        batch_size (int): The batch size to be used by the DataLoaders.
-    Returns:
-        tuple: A tuple containing:
-            - FederatedDataset: An object containing client DataLoaders for federated learning.
-            - Dictionary: Key the test ds name and value a DataLoader for the tokenized and preprocessed test dataset.
-    """
     raw_datasets = load_dataset(path=ds_path, name=ds_name)
-    raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
     raw_train_dataset = raw_datasets['train']
     MAX_SAMPLES = 100000000
     train_limit = min(len(raw_train_dataset), MAX_SAMPLES)
     raw_train_dataset = raw_train_dataset.select(range(train_limit))
+    if ds_name == 'mnist':
+        classes_per_client = 1 if num_clients == 10 else 2
+        client_datasets = extreme_non_iid_datasets(raw_train_dataset, num_clients, classes_per_client)
+        tok_client_datasets = []
+        for client_ds in client_datasets:
+            tok_ds = client_ds.rename_column("label", "labels")
+            tok_ds.set_format("torch", columns=["image", "labels"])
+            tok_client_datasets.append(tok_ds)
+        test_ds_formatted = raw_datasets['test'].rename_column("label", "labels")
+        test_ds_formatted.set_format("torch", columns=["image", "labels"])
+        client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, None, num_workers, pin_memory)
+        fed_ds = FederatedDataset(client_dataloaders)
+        test_ds = {'mnist': DataLoader(test_ds_formatted, batch_size=batch_size)}
+        return fed_ds, test_ds
+    raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
     for split_name in raw_test_datasets.keys():
         test_limit = min(len(raw_test_datasets[split_name]), MAX_SAMPLES)
         raw_test_datasets[split_name] = raw_test_datasets[split_name].select(range(test_limit))
@@ -232,14 +221,6 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
     else:
         tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     tokenize_fn = tokenize_function(ds_path, ds_name, tokenizer)
-    """
-    OPTIMIZATION: Tokenize BEFORE Splitting
-    Why: Hugging Face `datasets` caches `.map()` operations. By splitting the dataset into clients first
-    and then tokenizing each split, the system created and cached `num_clients` separate objects in RAM,
-    causing extreme memory spikes and slow initialization.
-    We now run the heavy `map` function on the entire dataset once, significantly reducing RAM usage
-    and startup delays. The fast metadata operations (renaming/formatting) are done post-split.
-    """
     tok_raw_train_dataset = raw_train_dataset.map(tokenize_fn, batched=True)
     client_datasets = federated_dirichlet_datasets(tok_raw_train_dataset, prior_distribution, num_clients, alpha)
     expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
@@ -251,20 +232,32 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
         tok_ds.set_format("torch")
         tok_client_datasets.append(tok_ds)
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-    client_dataloaders = create_client_dataloaders(
-        tok_client_datasets,
-        batch_size,
-        data_collator,
-        num_workers=num_workers,
-        pin_memory=pin_memory
-    )
+    client_dataloaders = create_client_dataloaders(tok_client_datasets, batch_size, data_collator, num_workers=num_workers, pin_memory=pin_memory)
     fed_ds = FederatedDataset(client_dataloaders)
-    test_ds = {
-        k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size)
-        for k, v in raw_test_datasets.items()
-    }
+    test_ds = {k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size) for k, v in raw_test_datasets.items()}
     return fed_ds, test_ds
-
+def extreme_non_iid_datasets(raw_train_dataset, num_clients, classes_per_client):
+    import numpy as np
+    df = raw_train_dataset.to_pandas()
+    num_classes = len(df['label'].unique())
+    client_datasets = []
+    if num_clients == 10 and classes_per_client == 1:
+        classes_assigned = [[i] for i in range(10)]
+    elif num_clients == 5 and classes_per_client == 2:
+        classes_assigned = [[2*i, 2*i+1] for i in range(5)]
+    else:
+        raise ValueError("Unsupported non-IID configuration.")
+    samples_per_client = len(raw_train_dataset) // num_clients
+    samples_per_class_per_client = samples_per_client // classes_per_client
+    label_indices = {label: df.index[df['label'] == label].tolist() for label in range(num_classes)}
+    for client_classes in classes_assigned:
+        client_indices = []
+        for c in client_classes:
+            idx_to_take = label_indices[c][:samples_per_class_per_client]
+            label_indices[c] = label_indices[c][samples_per_class_per_client:]
+            client_indices.extend(idx_to_take)
+        client_datasets.append(raw_train_dataset.select(client_indices))
+    return client_datasets
 class FederatedDataset:
     """
     A class to handle federated datasets for training in a federated learning setup.
@@ -279,7 +272,6 @@ class FederatedDataset:
             self.dataloader_batch_generator(client_dl)
             for client_dl in client_dataloaders
         ]
-
     def epoch_steps(self, client_ids):
         """
         Determine the number of steps (batches) in an epoch for the given clients.
@@ -292,7 +284,6 @@ class FederatedDataset:
             len(self.client_dataloaders[client_id])
             for client_id in client_ids
         )
-
     def next_client_batch(self, client_id):
         """
         Retrieve the next batch of data for the specified client.
@@ -304,7 +295,6 @@ class FederatedDataset:
         return next(
             self.client_batch_generators[client_id]
         )
-
     @staticmethod
     def dataloader_batch_generator(dataloader):
         """
@@ -317,7 +307,6 @@ class FederatedDataset:
         while True:
             for batch in dataloader:
                 yield batch
-
 class ClientSampler:
     """
     A class that helps random sampling of clients in each round.
@@ -334,7 +323,6 @@ class ClientSampler:
         if self.num_clients % self.sample_size != 0:
             raise ValueError("The number of clients must be divisible with the sample size.")
         self.client_sample_generator = self.sample_generator()
-
     def sample(self):
         """
         Returns the next group of sampled client IDs.
@@ -342,7 +330,6 @@ class ClientSampler:
             list: A list of sampled client IDs of length `sample_size`.
         """
         return next(self.client_sample_generator)
-
     def sample_generator(self):
         """
         A generator function to continuously generate groups of sampled client IDs.
@@ -356,3 +343,4 @@ class ClientSampler:
             groups = [shuffled_client_ids[i:i + self.sample_size] for i in range(0, self.num_clients, self.sample_size)]
             for sampled_client_ids in groups:
                 yield sampled_client_ids
+
