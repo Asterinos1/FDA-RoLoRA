@@ -1,0 +1,728 @@
+=== PAGE 7 ===
+Heterogeneous Case.
+In Appendix A3.5, we analyze the convergence of RoLoRA with single
+LoRA structure in a federated setting with heterogeneous clients. By showing the decreasing of the
+angle distance between the ground truth a∗and the shared down-projection a, we demonstrate that
+RoLoRA allows the global model to converge to global minimum while the global loss of FFA-LoRA
+can be dominated by the term caused by the angle distance between the random initialization a0 and
+a∗.
+4.2
+Verifying Insights On a Non-Linear Model
+Figure 2: (Left) Comparison of three methods on
+a toy model with 5 clients. (Right) Comparison of
+three methods on a toy model with 10 clients.
+The previous analysis considers a linear model
+for each client. To assess the validity of the
+theorem in a non-linear model, we consider a
+two-layer neural network model on each client
+given by
+fi(xi) = ReLU(xiAB)Wout
+(10)
+where Wout ∈Rd×c, A ∈Rd×r and B ∈
+Rr×d are weights.
+We train the model on
+MNIST [11]. We consider two different ways
+to distribute training images to clients. The first
+is to distribute the images to 5 clients and each
+client gets access to training images of two specific labels, while the second is to distribute the images
+to 10 clients and each client only has training images of one specific label. There is no overlap in the
+training samples each client can access. Only weights matrices B and A are tunable, while Wout are
+fixed. We use c = 10, d = 784, r = 16 and make each client train 5 epochs locally with batch-size
+64 and aggregate clients’ update following three methods: FedAVG of LoRA, referred as LoRA;
+FFA-LoRA [32], which freezes A during training, and RoLoRA, which alternately updates B and A.
+As shown in Figure 2, we evaluate the performance of the model in each iteration on the test set. We
+observe that the accuracy of FFA-LoRA plateaus around 55% in both settings, which aligns with
+our theoretical analysis. The decline in LoRA’s performance with an increasing number of clients is
+most likely due to less accurate model aggregation, as demonstrated in (1) and (2). Notably, RoLoRA
+demonstrates greater robustness in these settings. To study the impact of non-linearity on RoLoRA,
+we repeat the two-layer experiment on a linear network without ReLU. As shown in Figure 7 in the
+Appendix, RoLoRA benefits more from the added expressiveness of ReLU.
+4.3
+Convergence in Smooth Non-Convex Settings
+We follow the approach of Li et al.[25] to analyze the convergence behavior of RoLoRA in smooth,
+non-convex settings, and derive TheoremA4.4 in Appendix. As shown in TheoremA4.4, RoLoRA
+achieves an O(1/
+√
+T) convergence rate toward a stationary point under smooth, non-convex condi-
+tions, matching the convergence rate established for FedAVG in the same regime.
+5
+Experiments on Language Models
+In this section, we evaluate the performance of RoLoRA in various federated settings. Considering
+all clients will participate in each round, we will explore the following methods: FedAVG of LoRA
+(referred as LoRA) [43], FFA-LoRA [32], FlexLoRA[2], FloRA[40], and RoLoRA (ours).
+Implementation & Configurations.
+We implement all the methods based on FederatedScope-LLM
+[24]. We use NVIDIA GeForce RTX 4090 or NVIDIA A40 for all the experiments. To make a fair
+comparison, for each dataset, we obtain the best performance on test set and report the average over
+multiple seeds. Specifically, the learning rate is chosen from the set {5e −4, 1e −3, 2e −3, 5e −
+3, 1e −2, 2e −2, 5e −2, 1e −1}. Other hyper-parameters for experiments are specified in Table 6
+in Appendix A5.2. Please note that in all tasks, we compare the performance of the three methods
+under the same number of communication rounds.
+5.1
+Language Understanding Tasks
+Model and Datasets.
+We take the pre-trained RoBERTa-Large (355M) [27] models from the
+HuggingFace Transformers library, and evaluate the performance of federated finetuning methods on
+5 datasets (SST-2, QNLI, MNLI, QQP, RTE) from the GLUE [38].
+7
+
+
+=== PAGE 8 ===
+Rank
+Clients Num
+Method
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+Avg.
+4
+3
+LoRA
+95.62±0.17
+91.59±0.21
+86.20±0.05
+86.13±0.10
+81.46±1.22
+88.20
+FFA-LoRA
+95.18±0.09
+91.35±0.32
+84.58±0.21
+85.50±0.25
+81.10±0.33
+87.48
+FlexLoRA
+94.91±0.18
+90.16±0.49
+85.16±0.69
+85.69±0.17
+79.3±1.05
+87.04
+RoLoRA
+95.49±0.16
+91.64±0.30
+85.70±0.04
+86.14±0.06
+82.43±0.84
+88.28
+4
+20
+LoRA
+94.3±0.27
+86.67±2.02
+78.55±7.31
+83.1±0.04
+51.87±3.24
+78.90
+FFA-LoRA
+93.88±0.06
+89.11±0.19
+80.99±1.74
+83.92±0.2
+57.16±1.46
+80.01
+FlexLoRA
+90.97±1.78
+54.36±0.36
+53.30±14.59
+69.18±10.39
+53.19±1.45
+64.20
+RoLoRA
+94.88±0.18
+90.35±0.37
+85.28±1.04
+85.83±0.1
+78.82±1.7
+87.03
+4
+50
+LoRA
+93.00±0.35
+78.13±5.13
+52.64±15.07
+77.60±1.47
+52.23±1.1
+70.72
+FFA-LoRA
+93.23±0.12
+85.05±0.34
+69.97±5.57
+78.44±0.41
+55.72±1.99
+76.48
+FlexLoRA
+54.08±5.5
+55.4±2.03
+39.14±2.35
+72.00±7.64
+52.71±0.00
+54.67
+RoLoRA
+94.80±0.17
+90.00±0.63
+82.98±3.36
+85.71±0.18
+75.57±2.88
+85.81
+8
+50
+LoRA
+93.00±0.23
+79.87±1.52
+56.96±2.02
+77.45±1.97
+53.79±6.57
+64.03
+FFA-LoRA
+92.74±0.13
+83.69±0.75
+64.51±1.92
+79.71±2.04
+53.07±1.3
+72.46
+FlexLoRA
+50.92±0.00
+56.92±1.04
+37.43±2.80
+66.40±4.74
+52.59±0.21
+52.85
+RoLoRA
+94.53±0.17
+90.1±0.45
+85.17±0.41
+85.25±0.13
+76.3±4.9
+86.27
+Table 1: Results for four methods with RoBERTa-Large models across varying client numbers (3, 20,
+50), maintaining a constant sample count during fine-tuning.
+Figure 3: Accuracies over rounds with RoBERTa-
+Large models on SST-2, QNLI, MNLI, and QQP.
+It involves 50 clients using rank 4.
+Effect of Number of Clients.
+In Table 1, we
+increased the number of clients from 3 to 20,
+and then to 50, ensuring that there is no overlap
+in the training samples each client can access.
+Consequently, each client receives a smaller frac-
+tion of the total dataset. The configurations are
+presented in Table 7 in Appendix. We observe
+that as the number of clients increases, while
+maintaining the same number of fine-tuning
+samples, the performance of the LoRA method
+significantly deteriorates for most datasets. In
+contrast, RoLoRA maintains its accuracy lev-
+els. The performance of FFA-LoRA also de-
+clines, attributed to the limited expressiveness
+of the random initialization of A for clients’ het-
+erogeneous data. FlexLoRA shows significant
+degradation especially under high client counts.
+Notably, RoLoRA achieves this accuracy while
+incurring only half the communication costs as-
+sociated with LoRA and FlexLoRA. A comparison when using rank-2 LoRA adapter is shown in
+Table 8 in Appendix.
+Furthermore, we have provided performance comparison of FLoRA and RoLoRA in the same settings
+in Table 11 in Appendix. RoLoRA consistently outperforms FLoRA across tasks and client counts.
+Additionally, Figure 3 illustrates the finetuning dynamics, highlighting that RoLoRA converges
+substantially faster than the other methods. An extended 100-round version is provided in Figure 8 in
+the Appendix, further demonstrating RoLoRA’s superior accuracy when all baselines have converged.
+Dir(0.5), #Clients = 10
+Dir(1.0), #Clients = 15
+MNLI
+QQP
+MNLI
+QQP
+LoRA
+81.19 ±0.23
+82.60 ±0.41
+74.54 ±1.19
+81.49 ±0.60
+FFA-LoRA
+75.60 ±0.21
+81.47 ±0.87
+74.83 ±0.59
+78.62 ±1.67
+FlexLoRA
+35.45 ±0.00
+63.24 ±0.09
+35.45 ±0.00
+66.56 ±4.48
+RoLoRA
+82.60 ±0.69
+84.16 ±0.65
+81.55 ±0.44
+84.26 ±0.26
+Table 2: Performance comparison of methods on MNLI and
+QQP under different dirichlet distributions and client settings.
+We report the average and std. over three seeds.
+Effect of Non-IID Data Distribu-
+tion.
+Table 2 presents a perfor-
+mance comparison of LoRA, FFA-
+LoRA, FlexLoRA, and RoLoRA on
+the MNLI and QQP tasks under two
+federated settings: Dirichlet(0.5) with
+10 clients and Dirichlet(1.0) with 15
+clients.
+Here, the Dirichlet(α) pa-
+rameter controls how non-iid the data
+is across clients: a smaller α pro-
+duces highly skewed and heteroge-
+neous client data distributions, while
+a larger α yields more balanced, moderately non-iid splits. Across both tasks and settings, RoLoRA
+8
+
+
+=== PAGE 9 ===
+Figure 4: Results with RoBERTa-Large models on GLUE under different fine-tuning parameter
+budgets, involving three clients with rank 4.
+consistently achieves the highest performance. The configurations are presented in Table 7 in
+Appendix.
+Effect of Number of Finetuning Parameters.
+In Figure 4, we compare three methods across five
+GLUE datasets. We apply LoRA module to every weight matrix of the selected layers, given different
+budgets of LoRA parameters. For each dataset, we experiment with three budgets (P1, P2, P3)
+ranging from low to high. The corresponding layer sets that are attached with LoRA adapters,
+P1, P2, P3, are detailed in Table 12 in Appendix A5.2. The figures indicates that with sufficient
+number of finetuning parameters, FFA-LoRA can achieve comparable best accuracy as LoRA
+and RoLoRA, aligning with the results in [32]; as the number of LoRA parameters is reduced,
+the performance of the three methods deteriorates to varying degrees. However, RoLoRA, which
+achieves performance comparable to LoRA, demonstrates greater robustness compared to FFA-LoRA,
+especially under conditions of limited fine-tuning parameters. It is important to note that with the
+same finetuning parameters, the communication cost of RoLoRA and FFA-LoRA is always half of
+that of LoRA due to their parameter freezing nature. This implies that RoLoRA not only sustains its
+performance but also enhances communication efficiency. Additional results of varying ranks are
+provided in Figure 9, 10, and 11 in Appendix A5.4.
+BoolQ
+PIQA
+SIQA
+HellaSwag
+LoRA
+61.42±0.29
+33.19±9.8
+31.88±3.95
+21.23±2.82
+FFA-LoRA
+53.43±4.3
+35.49±9.55
+10.63±8.44
+11.81±4.53
+RoLoRA
+61.83±0.22
+61.26±3.3
+39.76±0.41
+27.49±2.34
+WinoGrande
+ARC-e
+ARC-c
+OBQA
+LoRA
+31.36±5.02
+27.36±0.89
+32.03±1.14
+26.07±2.32
+FFA-LoRA
+1.61±2.14
+6.88±0.42
+7.93±0.89
+15.0±5.41
+RoLoRA
+47.67±0.75
+33.19±1.29
+40.13±1.73
+31.67±1.4
+Table 3: Results with Llama-2-7B models on common-
+sense reasoning tasks. This involves 50 clients using rank
+8.
+Figure 5: Ablation study on learning
+vs. freezing A on MNLI task.
+5.2
+Commonsense Reasoning Tasks
+Results.
+We evaluate RoLoRA against FFA-LoRA and LoRA on Llama-2-7B[35] for commonsense
+reasoning tasks. In Table 3, we compare the results of three methods with Llama-2-7B models
+on 8 commonsense reasoning tasks. The configurations are presented in Appendix A5.7. The
+performance is reported as the mean accuracy with standard deviations across 3 trials. RoLoRA
+consistently achieves the highest accuracy across all tasks, demonstrating significant improvements
+over both LoRA and FFA-LoRA. We also highlights that FFA-LoRA exhibits large performance
+variances across trials, such as a standard deviation of 9.55 for PIQA and 8.44 for SIQA, respectively.
+This significant variability is likely due to the initialization quality of parameter A, as different
+initializations could lead to varying optimization trajectories and final performance outcomes as
+discussed in Section 4. Additional results on this task are presented in Table 16 in Appendix A5.7.
+9
+
+
+=== PAGE 41 ===
+A5
+Experiments
+A5.1
+Impact of Non-Linearity on RoLoRA
+Across both linear and non-linear settings, all methods perform similarly, with RoLoRA showing mod-
+est improvement in the non-linear case, likely due to its better utilization of the added expressiveness
+from ReLU.
+Figure 7: Comparison of RoLoRA, LoRA, and FFA-LoRA on linear and non-linear networks. While
+overall performance is similar, RoLoRA shows modest gains in the non-linear setting, likely benefiting
+from ReLU’s added expressiveness.
+A5.2
+Hyper-parameters for GLUE task
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+Total comm. rounds
+500
+500
+500
+500
+200
+Batch Size
+64
+32
+32
+32
+32
+Local Epochs
+20
+20
+20
+20
+20
+Table 6: Hyper-parameters configurations. Note the total communication rounds are for the setting
+with 3 clients. When increasing the number of clients, we decrease the total communication rounds
+accordingly to maintain a constant sample count used during fine-tuning
+We show the hyper-parameter configurations for each dataset in Table 6.
+A5.3
+Effect of Number of Clients
+Configurations
+Table 7 shows the selected layer set attached with LoRA modules for Table 1. We
+present Table 1 with the results of FlexLoRA [2] added in Table 1.
+Layer Attributes
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+P2
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{18, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{16, . . . , 23}
+Table 7: The selected layer set attached with LoRA modules for Table 1 and Table 2
+Rank-2 Results
+We show the effect of number of clients when using rank-2 LoRA modules in
+Table 8.
+Rank-32 Results
+In Table 9, we provide additional experiments with rank-32 LoRA adapters in the
+20-client and 50-client setting.
+41
+
+
+=== PAGE 42 ===
+Client num
+Methods
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+LoRA
+95.64
+92.04
+85.85
+86.16
+82.19
+3
+FFA-LoRA
+94.91
+90.11
+84.06
+85.48
+80.86
+RoloRA
+95.60
+91.62
+85.66
+86.16
+82.19
+LoRA
+94.27
+86.91
+81.22
+82.07
+46.21
+20
+FFA-LoRA
+93.92
+89.58
+80.51
+82.62
+57.76
+RoloRA
+94.84
+90.77
+85.13
+85.10
+81.23
+LoRA
+93.23
+82.57
+58.96
+76.96
+49.10
+50
+FFA-LoRA
+92.32
+85.15
+62.79
+77.78
+53.07
+RoloRA
+94.61
+89.83
+85.15
+85.55
+72.92
+Table 8: Results with RoBERTa-Large models with varying client numbers (3, 20, 50) using rank-2
+LoRA modules in federated setting, maintaining a constant sample count during fine-tuning.
+Client num
+Methods
+MNLI
+QQP
+LoRA
+79.72 ±0.38
+83.66 ±0.02
+20
+FFA-LoRA
+80 ±0.47
+84.08 ±0.31
+RoLoRA
+85.91 ±0.63
+86.37 ±0.09
+LoRA
+70.84 ±4.63
+79.75 ±0.31
+50
+FFA-LoRA
+74.47 ±1.57
+80.65 ±0.31
+RoLoRA
+85.46 ±0.08
+86.15 ±0.26
+Table 9: Results with RoBERTa-Large models in 20-client and 50-client setting using rank-32 LoRA
+adapters.
+10-Client Setting
+In Table 10, we provide results for 10-client setting with rank-4 adapter. The
+results show that RoLoRA still outperform other methods. In the 10-client setting, RoLoRA’s
+performance gain over other methods falls between the gains observed in the 3-client and 20-client
+settings.
+MNLI
+QQP
+QNLI
+LoRA
+81.48 ±2.19
+84.1 ±0.14
+87.73 ±0.67
+FFA-LoRA
+83.19 ±0.64
+84.35 ±0.06
+89.88 ±0.13
+RoLoRA
+84.95 ±0.8
+95.25±0.39
+90.3 ±0.76
+Table 10: Results with RoBERTa-Large model with 10 clients using rank-4 LoRA adapters, running
+for 150 rounds in total.
+FLoRA vs. RoLoRA
+Table 11 shows a comparison between FLoRA and RoLoRA. In the 3-client
+setting, we ran 500 rounds and scaled rounds down proportionally with more clients to keep the
+total sample budget fixed. RoLoRA consistently outperforms FLoRA across tasks and client counts.
+While FLoRA eventually converges (e.g., 83.3% on MNLI after 4000 rounds), it does so much more
+slowly, highlighting RoLoRA’s faster convergence and better scalability.
+Finetuning Dynamics within 100 Rounds
+Figure 8 presents the 100-round extension of Figure 3,
+where RoLoRA consistently converges faster and achieves the highest accuracy.
+We want to clarify that Figure 3 focuses on comparing convergence under a fixed sample budget
+rather than full convergence, and Table 1 shows that this budget suffices for all methods when using 3
+clients. However, as shown in Figure 3, with 50 clients, only RoLoRA fully converges, underscoring
+its efficiency in low-resource settings.
+A5.4
+Effect of Number of LoRA Parameters
+In Table 12, we include the details about layers attached with LoRA adapters for different budget of
+finetuning parameters, for each dataset.
+42
+
+
+=== PAGE 43 ===
+Client num
+Method
+MNLI
+QQP
+QNLI
+3
+FLoRA
+39.29
+51.05
+59.88
+RoLoRA
+85.70
+86.14
+91.64
+20
+FLoRA
+32.01
+51.58
+49.89
+RoLoRA
+85.28
+85.83
+90.35
+50
+FLoRA
+31.97
+50.54
+38.82
+RoLoRA
+82.98
+85.71
+90.00
+Table 11: Results with RoBERTa-Large models with rank-4 LoRA adapter for varying numbers
+of clients (3, 20, 50), comparing FLoRA with RoLoRA, maintaining a constant sample count
+during finetuning. In the 3-client setting, while FLoRA eventually converges (e.g., 83.3% on MNLI
+after 4000 rounds), the figure shows results for only 500 rounds, within which FLoRA has not yet
+converged. This highlights RoLoRA’s faster convergence and better scalability.
+Figure 8: Accuracies over 100 rounds. It involves 50 clients using rank 4.
+Layer Attributes
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+P1
+Type
+Wv
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{21, . . . , 23}
+{21, . . . , 23}
+{21, . . . , 23}
+{21, . . . , 23}
+{21, . . . , 23}
+P2
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{18, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{16, . . . , 23}
+P3
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{0, . . . , 23}
+{12, . . . , 23}
+{12, . . . , 23}
+{12, . . . , 23}
+{12, . . . , 23}
+Table 12: The selected layer set attached with LoRA for the setup of Figure 4
+Figure 9: Results with RoBERTa-Large models on GLUE of different budget of finetuning parameters.
+It involves 3 clients using rank 8.
+A5.5
+Effect of Rank on RoLoRA and FFA-LoRA in the Centralized Setting
+We evaluated FFA-LoRA and RoLoRA on MNLI and QQP using 8 LoRA adapters attached to query
+and value projection of last 4 layers, and trained for 50000 iterations to ensure full convergence.
+Increasing ranks can narrow the performance gap between the two schemes. Another related technique
+to narrow the performance gap between the two schemes is by increasing the number of adapters, as
+discussed in Section 5.1 (“Effect of Number of Fine-Tuning Parameters”). With sufficient adapters,
+43
+
+
+=== PAGE 44 ===
+Figure 10: Results with RoBERTa-Large models on GLUE of different budget of finetuning parame-
+ters. It involves 3 clients using rank 2.
+Figure 11: Results with RoBERTa-Large models on GLUE of different budget of finetuning parame-
+ters. It involves 3 clients using rank 1.
+FFA-LoRA can achieve comparable peak accuracy to RoLoRA. However, in federated settings where
+resources are constraiend, RoLoRA is more advantageous.
+rank-1
+rank-2
+rank-32
+rank-64
+FFA-LoRA
+80.66
+81.51
+83.3
+83.32
+MNLI
+RoLoRA
+83.93
+84.59
+85.78
+85.79
+Diff
+3.27
++3.08
++2.51
++2.47
+FFA-LoRA
+69.61
+74.01
+75.53
+75.51
+QQP
+RoLoRA
+77.26
+77.41
+78.03
+78.05
+Diff
++7.65
++3.40
++2.5
++2.54
+Table 13: Evaluation on FFA-LoRA and RoLoRA in the centralized setting using only 8 LoRA
+adapters. Increasing ranks can narrow the performance gap between the two schemes.
+A5.6
+Align the Communication Cost
+In Figure 12, we conduct a comparison of three methods under the constraint of identical communi-
+cation costs under the assumption that the number of clients is small. To align the communication
+costs across these methods, two approaches are considered. The first approach involves doubling the
+rank of FFA-LoRA and RoLoRA, with results presented in Appendix A5.4. The second approach
+requires doubling the number of layers equipped with LoRA modules. In Figure 12, the latter strategy
+is employed. Specifically, for both FFA-LoRA and RoLoRA, we adjust the communication costs
+by doubling the number of layers equipped with LoRA modules, thereby standardizing the size of
+the transmitted messages. The configurations are presented in Table 14. Figure 12 demonstrates
+that when operating within a constrained communication cost budget, the performance of RoLoRA
+surpasses that of the other two methods for most of the tasks.
+In Table 14, we include the details about layers attached with LoRA adapters.
+A5.7
+Commonsense Reasoning Tasks
+We present the configurations for Table 3 in Table 15. We show the results under the same setup but
+using rank-2 LoRA modules in Table 16.
+44
+
+

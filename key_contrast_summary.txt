@@ -1,0 +1,49 @@
+KEY CONTRAST SUMMARY: FDA-OPT vs. STANDARD RoLoRA vs. FDA-RoLoRA
+================================================================
+
+1. PARAMETER ARENA
+------------------
+* FDA-Opt (fda_opt.pdf):
+  Macro-space (10⁷–10⁸ weights). Full RoBERTa/DeBERTa backbone parameter space.
+
+* Standard RoLoRA (rolora_verr4.pdf):
+  Micro-subspace (∼ 1.5 × 10⁴ weights). Rank r = 4 adapter coordinates.
+
+* FDA-RoLoRA (Our Work):
+  Micro-subspace (∼ 1.5 × 10⁴ weights). Rank r = 4 adapter coordinates.
+
+
+2. VARIANCE VALUES & BEHAVIOR
+-----------------------------
+* FDA-Opt (fda_opt.pdf):
+  Smooth & Diffusive (ν ∝ e). High-dimensional statistical concentration ensures minimal stochastic jitter round-to-round.
+
+* Standard RoLoRA (rolora_verr4.pdf):
+  Unobserved & Blind. Variance is completely unmonitored during training; fixed epochs (E = 5, 10, 20) ignore real-time client drift.
+
+* FDA-RoLoRA (Our Work):
+  Volatile & Superlinear (ν ∝ e^{1.5-2.0}). Confining optimization to few coordinates yields high stochastic sensitivity; drift accelerates rapidly under non-IID partitions.
+
+
+3. FACTOR SYMMETRY
+------------------
+* FDA-Opt (fda_opt.pdf):
+  Isotropic & Symmetric. All parameters across all layers are updated simultaneously every communication round.
+
+* Standard RoLoRA (rolora_verr4.pdf):
+  Asymmetric & Alternating. Alternates between Matrix A and Matrix B; client drift compounds while the alternate factor is frozen.
+
+* FDA-RoLoRA (Our Work):
+  Dual-Track Asymmetry. Up-projection Matrix B exhibits substantially higher gradient variance than Matrix A; requires independent threshold tracks (Θ_A, Θ_B) and Matrix B variance discounting (γ = 3.0).
+
+
+4. ROLE OF VARIANCE
+-------------------
+* FDA-Opt (fda_opt.pdf):
+  Proportional Thermostat. Regulates local step duration to maintain an artificial, symmetric 50% duty cycle around the midpoint (k = 0.5).
+
+* Standard RoLoRA (rolora_verr4.pdf):
+  Passive Vulnerability. Blind accumulation of variance leads to catastrophic collapse on difficult non-IID benchmarks (e.g. MNLI C = 50 crashing to 35.66%).
+
+* FDA-RoLoRA (Our Work):
+  Adaptive Safety Valve. Threshold (κ = 1.0) acts as an asymmetric emergency brake: harvests deep local computation (13–22 epochs) during aligned phases, but truncates rounds dynamically when turbulent drift threatens divergence.

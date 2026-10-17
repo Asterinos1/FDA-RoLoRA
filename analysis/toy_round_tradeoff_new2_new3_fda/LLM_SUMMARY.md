@@ -1,0 +1,1620 @@
+# LLM Summary: NEW2FDA & NEW3FDA vs. Federated Baselines
+
+```json
+{
+  "experiment": "FDA-LoRA Federated Adaptation Benchmarks (NEW2FDA & NEW3FDA vs Baselines)",
+  "dataset": "MNIST (ylecun/mnist, 10 classes)",
+  "total_rounds": 100,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "methods_evaluated": [
+    "FDA EMA-Standard (NEW2FDA)",
+    "FDA SMA (NEW3FDA)",
+    "FDA Standard (NEW2FDA)",
+    "FFA-LoRA",
+    "FedAvg-LoRA",
+    "RoLoRA"
+  ],
+  "scenarios": [
+    "10c1 (10 clients, 1 class/client)",
+    "5c2 (5 clients, 2 classes/client)"
+  ],
+  "architectures": [
+    "LIN (Linear classifier)",
+    "NONLIN (MLP classifier)"
+  ],
+  "benchmarks": {
+    "LIN_10c1": {
+      "architecture": "LIN",
+      "scenario": "10c1",
+      "fixed_round_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.4001,
+            "std": 0.0777
+          },
+          "R50": {
+            "mean": 0.5059,
+            "std": 0.0725
+          },
+          "R75": {
+            "mean": 0.4736,
+            "std": 0.0605
+          },
+          "R100": {
+            "mean": 0.5465,
+            "std": 0.0206
+          }
+        },
+        "FDA Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.4,
+            "std": 0.1096
+          },
+          "R50": {
+            "mean": 0.5004,
+            "std": 0.0511
+          },
+          "R75": {
+            "mean": 0.4462,
+            "std": 0.1153
+          },
+          "R100": {
+            "mean": 0.5577,
+            "std": 0.0552
+          }
+        },
+        "FFA-LoRA": {
+          "R25": {
+            "mean": 0.2708,
+            "std": 0.0502
+          },
+          "R50": {
+            "mean": 0.2564,
+            "std": 0.0797
+          },
+          "R75": {
+            "mean": 0.2974,
+            "std": 0.131
+          },
+          "R100": {
+            "mean": 0.3117,
+            "std": 0.0752
+          }
+        },
+        "FedAvg-LoRA": {
+          "R25": {
+            "mean": 0.5635,
+            "std": 0.0954
+          },
+          "R50": {
+            "mean": 0.6213,
+            "std": 0.1447
+          },
+          "R75": {
+            "mean": 0.6313,
+            "std": 0.1543
+          },
+          "R100": {
+            "mean": 0.6801,
+            "std": 0.1076
+          }
+        },
+        "RoLoRA": {
+          "R25": {
+            "mean": 0.4046,
+            "std": 0.0126
+          },
+          "R50": {
+            "mean": 0.4689,
+            "std": 0.0358
+          },
+          "R75": {
+            "mean": 0.4914,
+            "std": 0.0871
+          },
+          "R100": {
+            "mean": 0.5483,
+            "std": 0.0705
+          }
+        }
+      },
+      "peak_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.5972,
+          "max_accuracy_std": 0.016,
+          "best_round_mean": 84.3,
+          "best_round_median": 85
+        },
+        "FDA Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.5947,
+          "max_accuracy_std": 0.0136,
+          "best_round_mean": 80.7,
+          "best_round_median": 72
+        },
+        "FFA-LoRA": {
+          "max_accuracy_mean": 0.3912,
+          "max_accuracy_std": 0.044,
+          "best_round_mean": 51.0,
+          "best_round_median": 75
+        },
+        "FedAvg-LoRA": {
+          "max_accuracy_mean": 0.7098,
+          "max_accuracy_std": 0.096,
+          "best_round_mean": 91.7,
+          "best_round_median": 97
+        },
+        "RoLoRA": {
+          "max_accuracy_mean": 0.6012,
+          "max_accuracy_std": 0.0182,
+          "best_round_mean": 88.0,
+          "best_round_median": 88
+        }
+      },
+      "computation_efficiency": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 105530,
+          "steps_to_best_round": 89582,
+          "avg_local_epochs_per_round": 11.23
+        },
+        "FDA Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 85070,
+          "steps_to_best_round": 68933,
+          "avg_local_epochs_per_round": 9.05
+        },
+        "FFA-LoRA": {
+          "total_steps_100_rounds": 47000,
+          "steps_to_best_round": 23970,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "FedAvg-LoRA": {
+          "total_steps_100_rounds": 47000,
+          "steps_to_best_round": 43083,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "RoLoRA": {
+          "total_steps_100_rounds": 47000,
+          "steps_to_best_round": 41360,
+          "avg_local_epochs_per_round": 5.0
+        }
+      },
+      "rounds_to_target": {
+        "60.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "1/3",
+            "mean_round": 54.0,
+            "std_round": 0.0
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "2/3",
+            "mean_round": 77.0,
+            "std_round": 7.0
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 31.3,
+            "std_round": 6.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 74.0,
+            "std_round": 0.0
+          }
+        },
+        "65.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "2/3",
+            "mean_round": 42.0,
+            "std_round": 17.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "70.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 27.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "72.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 34.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "75.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 39.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "77.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 39.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "79.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 56.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "80.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 56.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "82.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "85.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        }
+      }
+    },
+    "LIN_5c2": {
+      "architecture": "LIN",
+      "scenario": "5c2",
+      "fixed_round_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.371,
+            "std": 0.0338
+          },
+          "R50": {
+            "mean": 0.5144,
+            "std": 0.0192
+          },
+          "R75": {
+            "mean": 0.5008,
+            "std": 0.0367
+          },
+          "R100": {
+            "mean": 0.5508,
+            "std": 0.0518
+          }
+        },
+        "FDA Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.4576,
+            "std": 0.0289
+          },
+          "R50": {
+            "mean": 0.552,
+            "std": 0.0544
+          },
+          "R75": {
+            "mean": 0.5208,
+            "std": 0.0308
+          },
+          "R100": {
+            "mean": 0.5787,
+            "std": 0.0322
+          }
+        },
+        "FFA-LoRA": {
+          "R25": {
+            "mean": 0.3265,
+            "std": 0.0202
+          },
+          "R50": {
+            "mean": 0.3144,
+            "std": 0.0235
+          },
+          "R75": {
+            "mean": 0.3316,
+            "std": 0.044
+          },
+          "R100": {
+            "mean": 0.3155,
+            "std": 0.0534
+          }
+        },
+        "FedAvg-LoRA": {
+          "R25": {
+            "mean": 0.4269,
+            "std": 0.0397
+          },
+          "R50": {
+            "mean": 0.4689,
+            "std": 0.0601
+          },
+          "R75": {
+            "mean": 0.431,
+            "std": 0.0289
+          },
+          "R100": {
+            "mean": 0.4394,
+            "std": 0.0177
+          }
+        },
+        "RoLoRA": {
+          "R25": {
+            "mean": 0.4236,
+            "std": 0.0035
+          },
+          "R50": {
+            "mean": 0.553,
+            "std": 0.0204
+          },
+          "R75": {
+            "mean": 0.4818,
+            "std": 0.1291
+          },
+          "R100": {
+            "mean": 0.6126,
+            "std": 0.0355
+          }
+        }
+      },
+      "peak_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.6252,
+          "max_accuracy_std": 0.0199,
+          "best_round_mean": 84.7,
+          "best_round_median": 94
+        },
+        "FDA Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.648,
+          "max_accuracy_std": 0.022,
+          "best_round_mean": 90.3,
+          "best_round_median": 91
+        },
+        "FFA-LoRA": {
+          "max_accuracy_mean": 0.3824,
+          "max_accuracy_std": 0.0251,
+          "best_round_mean": 49.0,
+          "best_round_median": 40
+        },
+        "FedAvg-LoRA": {
+          "max_accuracy_mean": 0.5448,
+          "max_accuracy_std": 0.0184,
+          "best_round_mean": 45.3,
+          "best_round_median": 35
+        },
+        "RoLoRA": {
+          "max_accuracy_mean": 0.6591,
+          "max_accuracy_std": 0.0077,
+          "best_round_mean": 75.3,
+          "best_round_median": 80
+        }
+      },
+      "computation_efficiency": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 198594,
+          "steps_to_best_round": 161568,
+          "avg_local_epochs_per_round": 10.62
+        },
+        "FDA Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 168113,
+          "steps_to_best_round": 151470,
+          "avg_local_epochs_per_round": 8.99
+        },
+        "FFA-LoRA": {
+          "total_steps_100_rounds": 93500,
+          "steps_to_best_round": 45815,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "FedAvg-LoRA": {
+          "total_steps_100_rounds": 93500,
+          "steps_to_best_round": 42386,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "RoLoRA": {
+          "total_steps_100_rounds": 93500,
+          "steps_to_best_round": 70436,
+          "avg_local_epochs_per_round": 5.0
+        }
+      },
+      "rounds_to_target": {
+        "60.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 68.0,
+            "std_round": 20.5
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 49.3,
+            "std_round": 11.6
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 45.7,
+            "std_round": 7.0
+          }
+        },
+        "65.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "1/3",
+            "mean_round": 84.0,
+            "std_round": 0.0
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 64.0,
+            "std_round": 15.6
+          }
+        },
+        "70.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "72.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "75.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "77.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "79.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "80.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "82.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "85.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        }
+      }
+    },
+    "NONLIN_10c1": {
+      "architecture": "NONLIN",
+      "scenario": "10c1",
+      "fixed_round_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.5064,
+            "std": 0.0257
+          },
+          "R50": {
+            "mean": 0.6517,
+            "std": 0.0278
+          },
+          "R75": {
+            "mean": 0.6199,
+            "std": 0.0425
+          },
+          "R100": {
+            "mean": 0.7247,
+            "std": 0.0085
+          }
+        },
+        "FDA SMA (NEW3FDA)": {
+          "R25": {
+            "mean": 0.4864,
+            "std": 0.048
+          },
+          "R50": {
+            "mean": 0.6641,
+            "std": 0.0168
+          },
+          "R75": {
+            "mean": 0.6268,
+            "std": 0.0138
+          },
+          "R100": {
+            "mean": 0.6943,
+            "std": 0.0288
+          }
+        },
+        "FDA Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.4929,
+            "std": 0.0441
+          },
+          "R50": {
+            "mean": 0.6395,
+            "std": 0.0294
+          },
+          "R75": {
+            "mean": 0.6452,
+            "std": 0.0158
+          },
+          "R100": {
+            "mean": 0.7123,
+            "std": 0.0041
+          }
+        },
+        "FFA-LoRA": {
+          "R25": {
+            "mean": 0.4854,
+            "std": 0.0791
+          },
+          "R50": {
+            "mean": 0.6143,
+            "std": 0.0137
+          },
+          "R75": {
+            "mean": 0.6639,
+            "std": 0.024
+          },
+          "R100": {
+            "mean": 0.6914,
+            "std": 0.0442
+          }
+        },
+        "FedAvg-LoRA": {
+          "R25": {
+            "mean": 0.4877,
+            "std": 0.0294
+          },
+          "R50": {
+            "mean": 0.6303,
+            "std": 0.0402
+          },
+          "R75": {
+            "mean": 0.6711,
+            "std": 0.0263
+          },
+          "R100": {
+            "mean": 0.6701,
+            "std": 0.0207
+          }
+        },
+        "RoLoRA": {
+          "R25": {
+            "mean": 0.5351,
+            "std": 0.0545
+          },
+          "R50": {
+            "mean": 0.6413,
+            "std": 0.0177
+          },
+          "R75": {
+            "mean": 0.6138,
+            "std": 0.0061
+          },
+          "R100": {
+            "mean": 0.694,
+            "std": 0.0358
+          }
+        }
+      },
+      "peak_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.7549,
+          "max_accuracy_std": 0.013,
+          "best_round_mean": 94.0,
+          "best_round_median": 94
+        },
+        "FDA SMA (NEW3FDA)": {
+          "max_accuracy_mean": 0.7356,
+          "max_accuracy_std": 0.0151,
+          "best_round_mean": 88.7,
+          "best_round_median": 86
+        },
+        "FDA Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.7456,
+          "max_accuracy_std": 0.0124,
+          "best_round_mean": 94.7,
+          "best_round_median": 98
+        },
+        "FFA-LoRA": {
+          "max_accuracy_mean": 0.7178,
+          "max_accuracy_std": 0.0122,
+          "best_round_mean": 96.7,
+          "best_round_median": 98
+        },
+        "FedAvg-LoRA": {
+          "max_accuracy_mean": 0.7182,
+          "max_accuracy_std": 0.0149,
+          "best_round_mean": 85.7,
+          "best_round_median": 85
+        },
+        "RoLoRA": {
+          "max_accuracy_mean": 0.7524,
+          "max_accuracy_std": 0.0044,
+          "best_round_mean": 93.3,
+          "best_round_median": 92
+        }
+      },
+      "computation_efficiency": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 105217,
+          "steps_to_best_round": 100172,
+          "avg_local_epochs_per_round": 11.19
+        },
+        "FDA SMA (NEW3FDA)": {
+          "total_steps_100_rounds": 94689,
+          "steps_to_best_round": 84976,
+          "avg_local_epochs_per_round": 10.07
+        },
+        "FDA Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 83597,
+          "steps_to_best_round": 79242,
+          "avg_local_epochs_per_round": 8.89
+        },
+        "FFA-LoRA": {
+          "total_steps_100_rounds": 47000,
+          "steps_to_best_round": 45433,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "FedAvg-LoRA": {
+          "total_steps_100_rounds": 47000,
+          "steps_to_best_round": 40263,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "RoLoRA": {
+          "total_steps_100_rounds": 47000,
+          "steps_to_best_round": 43866,
+          "avg_local_epochs_per_round": 5.0
+        }
+      },
+      "rounds_to_target": {
+        "60.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 26.0,
+            "std_round": 4.3
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 22.7,
+            "std_round": 2.5
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 26.7,
+            "std_round": 0.9
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 39.3,
+            "std_round": 1.7
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 35.7,
+            "std_round": 4.5
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 21.3,
+            "std_round": 2.5
+          }
+        },
+        "65.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 43.3,
+            "std_round": 7.7
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 42.0,
+            "std_round": 6.5
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 38.0,
+            "std_round": 7.5
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 49.0,
+            "std_round": 3.3
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 44.3,
+            "std_round": 4.1
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 40.7,
+            "std_round": 7.4
+          }
+        },
+        "70.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 65.3,
+            "std_round": 13.2
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 64.7,
+            "std_round": 3.8
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 56.7,
+            "std_round": 10.6
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 91.3,
+            "std_round": 4.9
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 71.0,
+            "std_round": 13.4
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 67.3,
+            "std_round": 4.1
+          }
+        },
+        "72.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 81.7,
+            "std_round": 9.0
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "2/3",
+            "mean_round": 77.0,
+            "std_round": 9.0
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 86.0,
+            "std_round": 1.6
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 100.0,
+            "std_round": 0.0
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 80.0,
+            "std_round": 0.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 90.7,
+            "std_round": 0.9
+          }
+        },
+        "75.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "2/3",
+            "mean_round": 89.0,
+            "std_round": 5.0
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "1/3",
+            "mean_round": 98.0,
+            "std_round": 0.0
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "2/3",
+            "mean_round": 94.0,
+            "std_round": 2.0
+          }
+        },
+        "77.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "79.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "80.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "82.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "85.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        }
+      }
+    },
+    "NONLIN_5c2": {
+      "architecture": "NONLIN",
+      "scenario": "5c2",
+      "fixed_round_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.6195,
+            "std": 0.0282
+          },
+          "R50": {
+            "mean": 0.6965,
+            "std": 0.0113
+          },
+          "R75": {
+            "mean": 0.6134,
+            "std": 0.0151
+          },
+          "R100": {
+            "mean": 0.7141,
+            "std": 0.0322
+          }
+        },
+        "FDA SMA (NEW3FDA)": {
+          "R25": {
+            "mean": 0.6562,
+            "std": 0.0305
+          },
+          "R50": {
+            "mean": 0.7522,
+            "std": 0.0221
+          },
+          "R75": {
+            "mean": 0.7382,
+            "std": 0.0242
+          },
+          "R100": {
+            "mean": 0.728,
+            "std": 0.0662
+          }
+        },
+        "FDA Standard (NEW2FDA)": {
+          "R25": {
+            "mean": 0.6605,
+            "std": 0.0894
+          },
+          "R50": {
+            "mean": 0.7226,
+            "std": 0.0114
+          },
+          "R75": {
+            "mean": 0.727,
+            "std": 0.0445
+          },
+          "R100": {
+            "mean": 0.7689,
+            "std": 0.0465
+          }
+        },
+        "FFA-LoRA": {
+          "R25": {
+            "mean": 0.5702,
+            "std": 0.0017
+          },
+          "R50": {
+            "mean": 0.5761,
+            "std": 0.0096
+          },
+          "R75": {
+            "mean": 0.5828,
+            "std": 0.016
+          },
+          "R100": {
+            "mean": 0.5922,
+            "std": 0.0203
+          }
+        },
+        "FedAvg-LoRA": {
+          "R25": {
+            "mean": 0.6515,
+            "std": 0.0173
+          },
+          "R50": {
+            "mean": 0.6893,
+            "std": 0.0256
+          },
+          "R75": {
+            "mean": 0.6717,
+            "std": 0.0211
+          },
+          "R100": {
+            "mean": 0.7507,
+            "std": 0.0105
+          }
+        },
+        "RoLoRA": {
+          "R25": {
+            "mean": 0.6562,
+            "std": 0.0222
+          },
+          "R50": {
+            "mean": 0.7569,
+            "std": 0.0267
+          },
+          "R75": {
+            "mean": 0.7242,
+            "std": 0.0445
+          },
+          "R100": {
+            "mean": 0.7573,
+            "std": 0.0539
+          }
+        }
+      },
+      "peak_accuracy": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.7499,
+          "max_accuracy_std": 0.0161,
+          "best_round_mean": 76.0,
+          "best_round_median": 82
+        },
+        "FDA SMA (NEW3FDA)": {
+          "max_accuracy_mean": 0.7933,
+          "max_accuracy_std": 0.0098,
+          "best_round_mean": 77.3,
+          "best_round_median": 74
+        },
+        "FDA Standard (NEW2FDA)": {
+          "max_accuracy_mean": 0.8007,
+          "max_accuracy_std": 0.019,
+          "best_round_mean": 93.3,
+          "best_round_median": 94
+        },
+        "FFA-LoRA": {
+          "max_accuracy_mean": 0.6014,
+          "max_accuracy_std": 0.0069,
+          "best_round_mean": 93.0,
+          "best_round_median": 92
+        },
+        "FedAvg-LoRA": {
+          "max_accuracy_mean": 0.7512,
+          "max_accuracy_std": 0.0106,
+          "best_round_mean": 97.0,
+          "best_round_median": 100
+        },
+        "RoLoRA": {
+          "max_accuracy_mean": 0.7993,
+          "max_accuracy_std": 0.0034,
+          "best_round_mean": 93.3,
+          "best_round_median": 96
+        }
+      },
+      "computation_efficiency": {
+        "FDA EMA-Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 194168,
+          "steps_to_best_round": 150722,
+          "avg_local_epochs_per_round": 10.38
+        },
+        "FDA SMA (NEW3FDA)": {
+          "total_steps_100_rounds": 169671,
+          "steps_to_best_round": 132333,
+          "avg_local_epochs_per_round": 9.07
+        },
+        "FDA Standard (NEW2FDA)": {
+          "total_steps_100_rounds": 158513,
+          "steps_to_best_round": 148166,
+          "avg_local_epochs_per_round": 8.48
+        },
+        "FFA-LoRA": {
+          "total_steps_100_rounds": 93500,
+          "steps_to_best_round": 86955,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "FedAvg-LoRA": {
+          "total_steps_100_rounds": 93500,
+          "steps_to_best_round": 90695,
+          "avg_local_epochs_per_round": 5.0
+        },
+        "RoLoRA": {
+          "total_steps_100_rounds": 93500,
+          "steps_to_best_round": 87266,
+          "avg_local_epochs_per_round": 5.0
+        }
+      },
+      "rounds_to_target": {
+        "60.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 12.7,
+            "std_round": 3.4
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 10.0,
+            "std_round": 1.6
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 10.7,
+            "std_round": 2.5
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "2/3",
+            "mean_round": 78.5,
+            "std_round": 18.5
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 9.7,
+            "std_round": 0.9
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 13.0,
+            "std_round": 4.1
+          }
+        },
+        "65.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 23.3,
+            "std_round": 7.7
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 15.7,
+            "std_round": 1.7
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 17.7,
+            "std_round": 4.5
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 20.3,
+            "std_round": 3.1
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 17.7,
+            "std_round": 3.3
+          }
+        },
+        "70.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 37.7,
+            "std_round": 2.9
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 23.3,
+            "std_round": 2.5
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 26.7,
+            "std_round": 3.4
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 43.3,
+            "std_round": 6.6
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 29.3,
+            "std_round": 5.2
+          }
+        },
+        "72.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 53.3,
+            "std_round": 8.4
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 37.3,
+            "std_round": 3.4
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 31.0,
+            "std_round": 4.5
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 64.7,
+            "std_round": 4.5
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 37.0,
+            "std_round": 6.4
+          }
+        },
+        "75.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "2/3",
+            "mean_round": 84.0,
+            "std_round": 6.0
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 42.3,
+            "std_round": 5.4
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 52.7,
+            "std_round": 8.2
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "2/3",
+            "mean_round": 93.0,
+            "std_round": 7.0
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 45.7,
+            "std_round": 9.7
+          }
+        },
+        "77.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 62.7,
+            "std_round": 9.8
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "3/3",
+            "mean_round": 69.3,
+            "std_round": 14.8
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 55.7,
+            "std_round": 3.3
+          }
+        },
+        "79.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "2/3",
+            "mean_round": 78.0,
+            "std_round": 4.0
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "2/3",
+            "mean_round": 73.0,
+            "std_round": 9.0
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "3/3",
+            "mean_round": 82.0,
+            "std_round": 9.1
+          }
+        },
+        "80.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "1/3",
+            "mean_round": 84.0,
+            "std_round": 0.0
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "1/3",
+            "mean_round": 72.0,
+            "std_round": 0.0
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "1/3",
+            "mean_round": 82.0,
+            "std_round": 0.0
+          }
+        },
+        "82.5%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        },
+        "85.0%": {
+          "FDA EMA-Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA SMA (NEW3FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FDA Standard (NEW2FDA)": {
+            "reached_ratio": "0/3"
+          },
+          "FFA-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "FedAvg-LoRA": {
+            "reached_ratio": "0/3"
+          },
+          "RoLoRA": {
+            "reached_ratio": "0/3"
+          }
+        }
+      }
+    }
+  },
+  "key_takeaways": [
+    "NONLIN (MLP) Superiority: Corrected FDA runs (NEW2FDA / NEW3FDA) show strong performance in non-linear partitions. In NONLIN-10c1, FDA EMA-Standard achieves 72.47% final accuracy (peak 75.49%), FDA Standard achieves 71.23% (peak 74.56%), and FDA SMA (NEW3FDA) achieves 65.64% (peak 73.11%), competing against RoLoRA (69.40%) and FedAvg-LoRA (67.01%). In NONLIN-5c2, FDA Standard reaches 76.89% final accuracy (peak 80.07%), beating RoLoRA (75.73%) and FedAvg-LoRA (75.07%), with FDA SMA achieving 72.93% (peak 76.43%).",
+    "EMA Variance Damping: In the pathological 10c1 non-IID scenario, EMA momentum (rho=0.9) damps high-frequency drift in variance estimation, stabilizing cross-seed variance (+/-0.85%).",
+    "Compute vs Communication Trade-Off: FDA dynamically allocates adaptive local epochs per round based on drift variance. While requiring more local gradient steps per communication round, FDA achieves faster round-wise convergence.",
+    "Loss Divergence Resistance: In linear settings, standard FedAvg-LoRA and FFA-LoRA show severe loss instability, whereas RoLoRA and FDA keep test loss bounded (<6.2)."
+  ]
+}
+```

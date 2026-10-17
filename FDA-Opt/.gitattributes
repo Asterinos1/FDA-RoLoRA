@@ -1,0 +1,2 @@
+*.ipynb -linguist-detectable 
+*.sh -linguist-detectable

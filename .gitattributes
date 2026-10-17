@@ -1,0 +1,14 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Mark output payloads and metrics as generated (hides them from language stats and diffs)
+*.json linguist-generated=true
+*.csv linguist-generated=true
+results/* linguist-generated=true
+graphify-out/* linguist-generated=true
+
+# Explicitly mark PDF figures as binary
+*.pdf binary
+
+# Explicitly mark Python files
+*.py text eol=lf

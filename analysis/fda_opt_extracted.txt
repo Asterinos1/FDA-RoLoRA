@@ -1,0 +1,1979 @@
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+1
+
+FDA-O PT: Communication-Efficient Federated
+Fine-Tuning of Language Models
+
+arXiv:2505.04535v2 [cs.LG] 24 Jun 2025
+
+Michail Theologitis, Vasilis Samoladas, and Antonios Deligiannakis
+
+Abstract—Federated Learning (FL) enables the utilization of
+vast, previously inaccessible data sources. At the same time,
+pre-trained Language Models (LMs) have taken the world by
+storm and for good reason. They exhibit remarkable emergent
+abilities and are readily adapted to downstream tasks. This
+opens one of the most exciting frontiers in FL: fine-tuning
+LMs. Yet, a persistent challenge in FL is the frequent, rigid
+communication of parameters—a problem magnified by the sheer
+size of these contemporary models. The F ED O PT family of
+algorithms has become the go-to approach for FL, relying on
+fixed but arbitrary intervals for model exchanges. Recently, the
+FDA algorithm prescribed a dynamic approach by monitoring
+the training progress. However, it introduced a hard-to-calibrate
+parameter and imposed a rigid synchronization scheme. In this
+work, we address these limitations by proposing the FDA-O PT
+family of algorithms—a unified generalization of both FDA and
+F ED O PT. Our experimental evaluation focuses on fine-tuning
+LMs on downstream NLP tasks and demonstrates that FDA-O PT
+outperforms F ED O PT even when it is configured with hyperparameters specifically optimized for the latter. In other words,
+we show that FDA-O PT is a practical, drop-in replacement for
+F ED O PT in modern FL libraries and systems: it requires no
+additional configuration and delivers superior performance out
+of the box.
+
+challenge: the frequent exchange of model updates. This
+issue is only exacerbated by the immense size of modern
+transformer-based models, making communication overhead
+a critical bottleneck [10].
+To better understand this challenge, it is crucial to examine
+how FL operates in practice. In a typical FL setting, a central
+server orchestrates the training process across multiple data
+owners. Training proceeds in iterative rounds (Figure 1),
+each consisting of four key steps: broadcast, local training,
+collection, and aggregation. The server first broadcasts a global
+model to participating clients, who then train the model locally
+using their private data. After training, clients send their
+updates back to the server, who aggregates them into a new
+global model. These FL training rounds are repeated thousands
+of times until the model converges. Despite its conceptual
+simplicity, a critical open question remains: When should the
+server collect model updates? When should a round end?
+
+Step 1: Broadcast
+
+Step 2: Training
+
+Central Server
+
+Central Server
+
+Step 3: Collection
+
+Step 4: Aggregation
+
+Central Server
+
+Central Server
+
+Index Terms—Federated Learning, Deep Learning, Language
+Models.
+
+I. I NTRODUCTION
+
+I
+
+N today’s data-driven landscape, leveraging data effectively
+has become both an opportunity and a challenge. Sensitive data, such as patient records in healthcare or personal
+information from mobile applications, is often siloed due to
+privacy concerns [1], [2] and stringent regulations [3]. While
+necessary for protecting user rights, these restrictions hinder
+the potential of machine learning solutions, as they prevent
+data from being centralized for training. Federated Learning
+(FL) [4], [5] emerges as a transformative paradigm by enabling
+models to be trained directly on the devices or organizations
+that own the data, bypassing restrictions and privacy concerns.
+At the same time, pre-trained Language Models (LMs) have
+demonstrated extraordinary generalization power that enables
+them to be readily adapted—through techniques like finetuning—to a broad range of downstream tasks [6], [7]. By
+following the FL paradigm, these powerful models can be
+trained on vast, previously untapped data sources, enabling
+new breakthroughs and applications in natural language processing (NLP) [8], [9]. However, FL introduces a fundamental
+The authors are with the School of Electrical and Computer Engineering, Technical University of Crete, Chania, 73100 Greece (e-mail:
+mtheologitis@tuc.gr; vsamoladas@tuc.gr; adeligiannakis@tuc.gr).
+Manuscript received April 19, 2005; revised August 26, 2015.
+
+=
+
+Fig. 1: A Federated Learning Round
+The widely adopted answer to this question is the F ED O PT
+family of algorithms [11], which prescribe ending rounds after
+a fixed number of local steps or epochs. In this approach, each
+client processes its dataset one or more times before sending
+model updates back to the server. However, this method has
+two significant limitations. First, it assumes the training process is static, with configurations predefined throughout training, without taking into account real-time training dynamics.
+Second, the choice of the number of local steps is arbitrary and
+lacks justification. Lower values may improve convergence
+but skyrocket communication overhead, while higher values
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+reduce communication cost but risk unpredictable training
+behavior or, in many cases, non-convergence [12].
+Recently, this trade-off has motivated the development of a
+dynamic approach to round termination: Federated Dynamic
+Averaging (FDA) [13]. Unlike static methods, FDA monitors
+the training state in real-time and adjusts the duration of
+each round accordingly. Specifically, FDA tracks the model
+variance—a gauge of whether training is progressing well or
+poorly—and ensures it remains below a prespecified threshold.
+As long as the variance is within this threshold, local training
+continues. When the variance exceeds the threshold, the round
+is terminated, and the server collects the models. This adaptive
+approach has been shown to significantly reduce communication overhead, achieving orders-of-magnitude improvements in
+communication compared to F ED O PT algorithms.
+However, the original formulation of FDA [13] has certain
+limitations. First, it enforces a rigid synchronization scheme,
+requiring clients to exchange information with the server
+synchronously after every learning step, which can bottleneck
+a real-world FL system. Second, while FDA successfully
+eliminates the need to tune the number of local steps, it
+introduces a new parameter—the variance threshold—which is
+highly nontrivial to calibrate. In addition to these limitations,
+the experimental comparisons between FDA and F ED O PT
+were between best-case configurations for each algorithm, with
+different optimizers and hyper-parameters, raising the question
+whether FDA consistently outperforms F ED O PT in an applesto-apples scenario.
+In this work, we propose the FDA-O PT family of algorithms that generalizes both FDA and F ED O PT and addresses
+their core shortcomings. Most importantly, we demonstrate
+that our proposed FDA-O PT algorithms can be directly
+plugged into modern FL libraries as drop-in replacements for
+F ED O PT. They require no additional configuration and, in fact,
+perform better even when using hyper-parameters originally
+tuned for F ED O PT. Our contributions are as follows:
+We propose the FDA-O PT family of algorithms, a unified
+generalization of both FDA and F ED O PT. In doing so,
+we introduce a dynamic scheme for the variance threshold, removing the need for any manual configuration, and
+completely alleviate the original synchronization bottleneck.
+• We show that FDA-O PT outperforms F ED O PT in
+communication-efficiency, achieving improvements of at
+least 2× while operating under conditions optimized for
+F ED O PT (the competitor). Specifically, we manually identify the optimal hyper-parameter configurations for each
+F ED O PT algorithm, and then apply the same configurations
+to our proposed FDA-O PT counterparts. Remarkably, even
+with these “unfair” and “rigged” hyper-paremeters, FDAO PT achieves 2× greater communication-efficiency for the
+same model performance. This has the important implication that hyper-parameters proven effective for F ED O PT
+in the literature can be directly leveraged to configure our
+proposed algorithms.
+• We show that all FDA-O PT algorithms converge to
+5×–10× lower training loss than their F ED O PT counterparts
+within the same number of rounds.
+
+•
+
+2
+
+The remainder of this paper is organized as follows. Section II introduces the foundational concepts of Federated
+Learning (FL), including the F ED O PT family of algorithms
+and the dynamic variance-based FDA approach. Section III
+presents our proposed FDA-O PT algorithm. Section IV outlines the experimental approach. Section V provides a detailed
+analysis of experimental results. Section VI reviews related
+work. Finally, Section VII summarizes the main findings of
+this work.
+II. P RELIMINARIES
+Before diving into our proposed algorithm, it is essential to
+understand the key concepts and methods that form its foundation. In this section, we break down the FL training process,
+explore the widely adopted F ED O PT family of algorithms,
+and introduce the recently proposed dynamic FDA approach.
+Together, these elements set the stage for understanding our
+subsequent contributions and the idea behind our generalized
+FDA-O PT algorithm in Section III.
+A. Federated Learning Basics
+Consider a scenario where we aim to train deep neural networks on data distributed across multiple devices or
+organizations—such as smartphones, hospitals, or sensors—
+that cannot be exchanged due to constraints like privacy or
+regulatory restrictions. Federated Learning (FL) addresses this
+challenge by enabling a set of clients, K, to collaboratively
+train a deep learning model without sharing their data. Each
+client k ∈ K retains its private local dataset, Dk .
+Instead of centralizing data on a powerful cluster for
+training, FL reverses the traditional approach: training and
+computation are brought to the data, that is, to the clients.
+Each client trains a model locally and shares updates with a
+central server, which consolidates them into a common global
+model, w ∈ Rd . The collective goal is to minimize the overall
+training loss across all clients, which can be expressed as the
+following distributed optimization problem [10]:
+∆
+
+minimize F (w) =
+w∈Rd
+
+1 X
+Fk (w)
+|K|
+
+(1)
+
+k∈K
+
+∆
+
+Here, Fk (w) = Eζk ∼Dk [ℓ(w; ζk )] is the local objective
+function for client k, and ℓ(w; ζk ) denotes the loss for a data
+sample ζk given the model w.
+B. Generalized Federated Averaging
+The most widely used algorithm for solving (1) is Federated
+Averaging (F EDAVG) [5]. This method divides the FL training
+process into iterative rounds. At the beginning of round t, the
+server broadcasts the current global model wt to a selected
+cohort of participating clients St ⊆ K. Each client k ∈ St
+(k)
+initializes its local model as wt,0 = wt , and performs τ
+local updates of Stochastic Gradient Descent (SGD) using its
+private dataset Dk . After training, the client sends its updated
+(k)
+model wt,τ back to the server. The server then aggregates
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+TABLE I: Overview of the F ED O PT and FDA-O PT families
+of algorithms. Depending on C LIENT O PT and S ERVERO PT
+a different name is derived for the FL algorithm. FDAO PT is our proposed algorithm, which will be introduced in
+Section III.
+F ED O PT
+F EDAVG [5]
+F EDAVG M [15]
+F EDA DAM [11]
+F EDA DAM W [8]
+F EDA DAG RAD [11]
+
+FDA-O PT (ours)
+FDA-SGD
+FDA-SGDM
+FDA-A DAM
+FDA-A DAM W
+FDA-A DAG RAD
+
+C LIENT O PT
+SGD
+SGD
+SGD
+SGD
+SGD
+
+S ERVERO PT
+SGD (lr = 1.0)
+SGDM [16]
+A DAM [14]
+A DAM W [17]
+A DAG RAD [18]
+
+the updates—typically via averaging1 —to form the new global
+model, wt+1 .
+An indirect yet highly effective way to mitigate the communication burden of FL is to accelerate convergence which led
+to efforts to incorporate accelerated optimization techniques—
+such as A DAM [14]—into the FL setting. However, FL clients
+typically lack enough data for robust statistical coverage and
+are often stateless, making adaptive optimization at the client
+level impractical. Instead, the key idea is to shift adaptive
+optimization to the server.
+Specifically, clients still perform τ local update steps of
+SGD, but instead of sending back the final model weights
+themselves, each client computes its local model change (or
+drift)
+(k)
+
+(k)
+
+(k)
+
+∆t,τ = wt,τ − wt,0 ,
+and sends this to the server. The server then averages the
+updates across clients to obtain the average update direction
+gt,τ = −
+
+1 X (k)
+∆t,τ ,
+|St |
+k∈St
+
+which we refer to as the “pseudo-gradient”. The term “pseudo”
+is used because even though gt,τ is not a traditional gradient—
+it was not derived from a loss function via backpropagation—
+it can still be treated in the same way [11]. The server
+then applies a server-side optimizer, S ERVERO PT, to update
+the global model using this “pseudo”-gradient. Importantly,
+since gt,τ aggregates updates from multiple clients, it offers
+sufficient and trustworthy statistics, and the server can easily
+maintain the optimizer state across rounds. In effect, this
+addresses the two challenges that make adaptive methods
+impractical on clients: unreliable statistics, and statelessness.
+This approach underpins the F ED O PT family of algorithms [11], which correspond to the non-highlighted lines
+of Algorithm 1 in Section III, alongside our proposed FDAO PT algorithm (highlighted lines). We present them together,
+as FDA-O PT generalizes the core functionality of F ED O PT.
+Additionally, Table I summarizes the F ED O PT family. Notably,
+F EDAVG—which simply averages updates—is mathematically
+equivalent to SGD with a learning rate of 1.0.
+1 To be precise, the aggregation is a weighted average based on the number
+of samples |Dk | owned by each client; however, to simplify notation, and
+because the extension to a weighted average is straightforward, we will use
+averaging throughout this paper.
+
+3
+
+C. Federated Dynamic Averaging
+Federated Dynamic Averaging (FDA) [13] is another algorithm for solving (1), with a key distinction from F EDAVG:
+instead of fixing the number of local steps τ per round,
+FDA dynamically decides when clients should stop training
+and return their models. Specifically, it monitors a metric
+called model variance, and terminates local training once this
+variance exceeds a predefined threshold Θ.
+This paradigm change affects the transition between Step 2
+and Step 3 in Figure 1—that is, when clients finish training
+and the server collects updates. Rather than enforcing a fixed
+number of SGD steps, FDA allows local training to continue
+as long as it is stable (i.e., variance remains low), and stops
+it early when instability is detected.
+During each round t, clients periodically send small pieces
+of information to the server, which uses it to estimate the
+model variance and transmit this estimate back to the clients
+(see Figure 2). Specifically, after every local step i, each client
+(k)
+k ∈ St computes its local model update ∆t,i and encodes it
+into a compact representation:
+h
+i
+(k)
+(k)
+(k)
+At,i = ∥∆t,i ∥22 , sk(∆t,i )
+(2)
+where sk(·) is the AMS sketch operator [13], [19]. These
+updates are highly compressed (e.g., in our experiments, a
+model might be 1GB, but a sketch is just 10KB). The server
+averages these to form the global state At,i , and computes an
+estimate of the variance νt,i :
+1 X (k)
+At,i
+νt,i = H(At,i ) , At,i =
+|St |
+k∈St
+
+Here, H is a function that maps the global state to a variance
+approximation (we refer to the original work for the full
+details [13]). Importantly, if a threshold violation is detected,
+νt,i > Θ, training stops, and the server collects models;
+otherwise, local training proceeds to the next SGD step, i + 1,
+and Steps 2.1–2.4 repeat (Figure 2).
+In many ways, FDA resembles the original formulation of
+F EDAVG. In the next section, we will extend its capabilities
+in a manner analogous to how F ED O PT generalized F EDAVG.
+III. FDA-O PT : G ENERALIZED F EDERATED DYNAMIC
+AVERAGING
+In this section, we propose FDA-O PT, the unified generalization of both FDA and F ED O PT, with the following
+advancements:
+1) FL Adaptations: We adapt the algorithm to accommodate FL-specific considerations, including client selection
+strategies and notation overlooked in the original design.
+2) Generalized Averaging: We enhance server-side aggregation by incorporating adaptive and accelerated optimizers,
+extending beyond the original simple averaging scheme.
+3) Dynamic Variance Threshold: We introduce a novel
+dynamic mechanism that automatically calibrates the variance threshold during training, eliminating the need for
+any manual tuning.
+4) Unified Configuration: We ensure that FDA-O PT shares
+the exact same hyper-parameters as F ED O PT, allowing it
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+4
+
+Additionally, as detailed in Section II-B, each client’s model
+(k)
+change, ∆t,i , captures the drift after the i-th local training
+step. Furthermore, their average, gt,i , can be interpreted as a
+“pseudo”-gradient:
+1 X (k)
+(k)
+(k)
+(k)
+∆t,i , ∆t,i = wt,i − wt,0
+gt,i = −
+|St |
+k∈St
+
+Definition. The model variance quantifies the spread (or dispersion) of the client models around their average—indicating
+how compactly they are clustered in parameter space. At round
+t, after i local training steps, it can be written as [13]:
+1st term
+
+}|
+{
+1 X
+(k) 2
+2
+∥∆t,i ∥2 − ∥gt,i ∥2
+Var(Wt,i ) =
+|St |
+| {z }
+z
+
+k∈St
+
+Fig. 2: Mechanics of local training, in round t, under FDA
+
+to be configured using well-established settings from prior
+work.
+5) Alleviate Synchronization Bottleneck: We relax the original rigid local-state synchronization requirement by allowing larger intervals between variance approximations.
+A. Optimizers
+In the original FDA algorithm, the server-side aggregation
+relied on a simple averaging scheme. However, extensive
+empirical evidence highlights the effectiveness of adaptive
+optimizers in FL [11]. Naturally, we extend the server-side
+aggregation step by introducing the use of arbitrary optimizers
+in FDA-O PT, denoted as S ERVERO PT.
+Intuitively, the client optimizer, C LIENT O PT, focuses on
+minimizing the local objective for each client based on its
+private data, while the server optimizer, S ERVERO PT, operates
+from a global perspective. By employing adaptive or accelerated optimizers at the server, we can now take advantage
+of meaningful and accurate statistics, which are inherently
+unavailable at the client level.
+B. Model Variance
+In this subsection, we formalize the notion of model variance, provide intuition for its components, examine how it
+evolves during training, and explain how it can be interpreted
+and used as a signal of meaningful progress or instability.
+Helpful Notation. Consider a training round at time t,
+involving a sampled subset of participating clients St =
+{k1 , k2 , . . . , kN }, where N = |St |. Moreover, let i be the
+local training step index. We can organize the client models
+into a matrix, Wt,i ∈ Rd×N , defined as:
+h
+i
+∆
+(k )
+(k )
+(k )
+Wt,i = wt,i1 , wt,i2 , . . . , wt,iN
+This notation allows us to represent the collective state of the
+sampled clients in a compact and intuitive manner.
+
+(3)
+
+2nd term
+
+Intuition. During a training round t, each client k updates its
+(k)
+model, resulting in a local change ∆t,i . The squared norm of
+(k)
+this change, ||∆t,i ||22 , quantifies how far the client’s model has
+moved from the start of the round (i.e., from the original global
+model). Essentially, this reflects the amount of information
+the client has learned locally. The first term in Equation (3),
+the average of these quantities across all participating clients,
+represents the collective amount of information learned.
+However, a large first term does not necessarily mean that
+training is progressing well, as clients may be moving in conflicting directions, canceling out their updates by averaging.
+What ultimately matters is the global change gt,i obtained
+after averaging—it foreshadows the information that will be
+retained in the global model. This is captured by the second
+term, ||gt,i ||22 , which inherently accounts for the direction of
+the local changes.
+The variance, as defined in Equation (3), reflects the interplay between these two quantities serves as an insightful
+gauge of the state of the training progress:
+1) Low Variance indicates either minimal local progress
+(both terms low), or substantial local progress in a cohesive
+and promising way (both terms high).
+2) High Variance indicates significant local progress (high
+first term) but towards conflicting local minima (low second term).
+Trends. What do we really mean by low or high variance?
+The answer is that these terms are inherently relative and taskspecific, influenced by factors like the dataset, model size, optimizer, and hyper-parameters. To illustrate this, we investigate
+the value of the variance at the end of each FL round under
+the fixed-round termination schedule of F ED O PT. Figure 3
+plots the variance at the exact moment when model updates
+are collected from the server. While the experimental setup—
+including the specific model and datasets—will be detailed
+later, we present this plot here to help readers intuitively grasp
+the variance as a metric and its trends.
+This plot underscores the critical need to revisit the originally proposed static variance monitoring scheme. Variance
+trends are inherently dynamic, evolving throughout training,
+and thus require an adaptive approach to be captured effectively. Moreover, different algorithms exhibit vastly different
+
+Model Variance
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+10 12
+10
+10 3
+10 4
+10 56
+10
+FedAvg
+10 78
+FedAvgM
+10 0
+20
+
+FedAdam
+FedAdamW
+
+40
+
+5
+
+FedAdaGrad
+
+Round
+
+60
+
+80
+
+100
+
+Fig. 3: Variance progression during the first 100 rounds of
+training with F ED O PT using RoBERTa on the MRPC dataset
+
+variance magnitudes (please note that the y-axis is logarithmic) and behaviors. Hence, variance trends should only
+be interpreted within the context of the same training run.
+Additionally, the magnitude of the variance may evolve even
+for the same optimizer by 1-3 orders of magnitude, depending
+on whether the training is in its early, middle, or late stages.
+All in all, high variance does not necessarily indicate that the
+model will converge to a suboptimal solution or that training
+is progressing poorly. Rather, high variance is interpreted as a
+sign of misalignment and instability when viewed in relation
+to earlier training rounds of the same run/optimizer.
+C. The FDA-O PT Algorithm
+High-Level Overview. Having established model variance as
+a key indicator of training dynamics—with distinct behaviors
+and trends—we now leverage these insights for a unique
+goal: to extend local training duration beyond traditional
+limits without compromising convergence. To this end, we the
+propose FDA-O PT, presented in Algorithm 1. The highlighted
+lines represent the core additions that distinguish FDA-O PT:
+namely, the logic for monitoring model variance and dynamically terminating rounds. These additions act as an adapter to
+the original F ED O PT framework (non-highlighted lines, also
+detailed in Section II-B), effectively generalizing it with an
+dynamic round termination scheme.
+Operational Details. The algorithm begins with a userprovided local training duration τ . This value is expected
+to be based on well-established and empirically effective
+configurations from prior F ED O PT work. Then, FDA-O PT
+modifies this internally by extending it to a larger value τ̃ ≫ τ
+(e.g., τ̃ = 10 · τ ; see Line 2).
+From this point onward, the algorithm proceeds using the
+standard round-based approach described in Section II-B. At
+the beginning of each round t, a cohort of clients St is
+sampled. These clients train locally for up to τ̃ steps (Lines
+3–9). At the end of training—whose actual length may vary—
+we compute the “pseudo”-gradient from model changes and
+update the global model accordingly (Lines 18 and 21). This
+process is repeated for a total of T rounds. What sets FDAO PT apart is its variance monitoring logic.
+Specifically, during local training, clients periodically synchronize compact state information (Lines 11–12) to approximate the model variance (Line 13). However, querying
+variance too frequently (e.g., after every local step) can completely bottleneck a real-world FL system. This is not due to
+communication volume (the local state states are small), but
+
+due to the synchronous nature of the operation. To mitigate
+this, we introduce a configurable set of step indices, Iquery ⊆
+[1, 2, ..., τ̃ ], which determines the exact points where variance
+queries are performed (Line 10). In contrast to the original
+FDA formulation [13], which used Iquery = [1, 2, ..., τ̃ ] (i.e.,
+checking after every step), our method leaves this set userdefined. In practice, we encourage it to be significantly sparser.
+As we will show later, in our setup the variance is queried only
+once per epoch.
+Lastly, following the discussion on variance behavior in
+Section III-B, we allow the threshold value, Θt , to evolve
+across training rounds. Rather than using a fixed value, the
+threshold is updated dynamically based on the observed training dynamics. Specifically, we define a function T HRESH OLDA DJUST , which takes as input the current threshold Θt ,
+the actual variance value at the end of the round, and the
+final step index st where the round terminated (Lines 19–20).
+Intuitively, these inputs capture the key information needed to
+answer two questions: (1) was the current threshold too high
+or too low? and (2) did the round terminate at a reasonable
+point (e.g., st = 1 should raise concerns)? In the next section,
+we will explore practical choices for this function. Notably,
+computing the variance in Line 19 requires no additional work,
+as it reuses quantities—the drifts and “pseudo”-gradient—that
+are already available (Lines 17–18).
+D. Default Configuration for FDA-O PT
+We adopt a conservative approach in the configurations
+below. These are the exact settings used in our experiments,
+as they yield stable and reliable performance across all tasks.
+While we believe there is room for improvement—potentially
+through more aggressive configurations (e.g., a larger linear
+coefficient of increase of τ )—we leave such tuning as a
+direction for future work.
+Local Training Extension. We set τ̃ to be twice the original τ
+plus a large constant. This constant is chosen to be eight times
+the size of a typical client dataset—denoted by e. Formally:
+1 X
+|Dk |
+(4)
+τ̃ = 2 · τ + 8 · ⌈e⌉, where e ≈
+|K|
+k∈K
+
+Variance Query Indices. Within each round, we query the
+variance once per epoch. This completely alleviates the synchronization bottleneck encountered in the original work [13].
+We define:
+Iquery = {e, 2e, ..., ⌊τ̃ /e⌋ · e}
+T HRESHOLDA DJUST. In general, variance within a round
+t tends to increase as local training progresses. We set the
+threshold Θt such that it is approximately equal to the expected
+variance
+around the midpoint of local training (i.e., at step
+ τ̃ 
+).
+Assuming
+linear growth, we can estimate the midpoint
+2
+variance of the round t+1 using a simple proportion, based on
+known values from the current round t—specifically, the actual
+variance νart and termination step st computed in Lines 15
+and 19 of Algorithm 1, respectively:
+after
+
+−−→ st local steps
+τ̃
+(est) after
+νart+1 −−→
+local steps
+2
+
+νart
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+6
+
+Algorithm 1 FDA-O PT
+
+B. Tasks & Datasets
+
+Input: Initial w0 ; C LIENT O PT, S ERVERO PT; Total
+rounds T ; Local training steps τ , specifically tuned
+for F ED O PT [11]
+1: Set Θ0 = − ∞
+2: Choose extended τ̃ ≫ τ
+▷ FDA-O PT extends local
+training
+3: for each round t = 0, . . . , T − 1 do
+4:
+Sample a subset St ⊆ K of clients
+(k)
+5:
+Set wt,0 = wt for all k ∈ St
+6:
+for each client k ∈ St in parallel do
+7:
+for each local step i = 1, ..., τ̃ do
+(k)
+(k)
+8:
+Compute gradient estimate gt,i−1 of ∇Fk (wt,i−1 )
+(k)
+(k)
+(k)
+9:
+wt,i = C LIENT O PT(wt,i−1 , gt,i−1 )
+10:
+If i ∈ Iquery then
+▷ Query variance now
+
+Natural Language Understanding (NLU) tasks are a core
+component of evaluating machine learning models in NLP.
+These tasks test a model’s ability to understand, reason, and
+infer relationships between pieces of text. To conduct our
+experiments, we select six widely used datasets and tasks
+from the GLUE [22] benchmark: MRPC [23], SST-2 [24],
+RTE [22], QNLI [22], MNLI-m and MNLI-mm [25]—each
+corresponding to a distinct NLU task. Since the GLUE test
+sets are unpublished, we follow prior studies [26] and use the
+validation sets as the new test sets.
+
+(k)
+
+12:
+
+Construct local state At,i using (2)
+P
+(k)
+Aggregate states At,i = |S1t | k∈St At,i
+
+13:
+
+Variance approx. νt,i = H(At,i )
+
+14:
+
+If νt,i > Θt then
+
+11:
+
+▷ See [13]
+
+▷ Threshold violation
+
+18:
+
+st = i
+▷ Round’s final step index
+break
+▷ Training round terminates
+(k)
+(k)
+(k)
+∆t,st = wt,st − wt,0
+▷ Local model change
+P
+(k)
+gt,st = − |S1t | k∈St ∆t,st
+▷ “Pseudo”-gradient
+
+19:
+
+νart = Var(Wt,st )
+
+20:
+
+Θt+1 = T HRESHOLDA DJUST(νart , Θt , st )
+
+15:
+16:
+17:
+
+▷ Compute actual var. using (3)
+
+21:
+wt+1 = S ERVERO PT(wt , gt,st )
+22: return wT
+
+With this linear prediction, we set the next round’s threshold
+to the estimated variance at the midpoint of local training,
+(est)
+νart+1 :
+τ̃ /2
+Θt+1 =
+· νart
+st
+IV. E XPERIMENTAL A PPROACH
+In this section, we outline the methodology and rationale behind evaluating the proposed FDA-O PT family of algorithms
+against F ED O PT. Specifically, we detail the infrastructure,
+datasets, data partitioning strategies, and models used in our
+study.
+
+A. Infrastructure
+We conduct our experiments using the transformers library
+from Hugging Face [20] with PyTorch [21]. The code is
+available at GitHub2 . All experiments are performed on a local
+cluster equipped with 2 NVIDIA A10 GPUs and 46 Intel(R)
+Xeon(R) Silver 4310 CPUs.
+2 https://github.com/miketheologitis/FDA-Opt
+
+C. Data Partitioning
+A critical aspect of FL is the distribution of data across
+clients, which is characterized by high heterogeneity. Most
+NLP datasets are designed for centralized machine learning
+settings. In this subsection, we describe how we partitioned
+these datasets for FL.
+Clients. The scale of data federation is determined by the
+number of clients, which generally falls into two categories:
+cross-silo and cross-device [27]. In cross-silo FL, the number
+of clients is small—such as hospitals or financial institutions—
+often allowing all clients to participate in each training round.
+For this setting, we use the MRPC and RTE datasets. In
+contrast, cross-device FL involves a much larger pool of
+clients, such as mobile or IoT devices, where only a fraction
+of them can participate in each round. For this setting, we use
+the SST-2, QNLI, and MNLI datasets. Table II summarizes
+the client partitioning and sampling strategies across these
+datasets.
+TABLE II: Client Partitioning Strategies per Dataset
+#Clients
+Sample Size
+Cross-Silo
+Cross-Device
+
+MRPC
+10
+10
+✓
+✗
+
+RTE
+10
+5
+✓
+✗
+
+SST-2
+100
+10
+✗
+✓
+
+QNLI
+250
+10
+✗
+✓
+
+MNLI-m
+1000
+10
+✗
+✓
+
+MNLI-mm
+1000
+10
+✗
+✓
+
+Label Distribution. One of the most common heterogeneity
+scenarios in FL is the presence of non-IID label distributions,
+where clients possess data with disproportionately distributed
+labels. For instance, one client may predominantly have samples of label A, while another may mostly contain label B.
+This phenomenon frequently occurs in real-world applications
+and is modeled using the Dirichlet distribution [28], [29],
+[30]. The degree of label imbalance is controlled by the
+concentration parameter α. Larger values of α result in more
+uniform distributions, with α → ∞ producing a perfectly
+uniform distribution. Conversely, as α approaches zero, the
+distributions become highly imbalanced, with each client
+predominantly holding samples from a single label. In our
+experiments, we set α = 1.0, introducing a considerable level
+of heterogeneity.
+Quantity Distribution. Another common heterogeneity scenario in FL is quantity-based imbalance, where clients possess
+vastly different amounts of data. We do not explicitly consider
+this scenario in our experiments. Nevertheless, while we aim
+to keep quantity distribution balanced, some low degree of
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+quantity imbalance is inevitably introduced due to the labelbased non-IID scheme.
+
+D. Models & Quality Baselines
+In our experiments, we use the pre-trained transformerbased models RoBERTa [31] and DeBERTaV3 [32].
+More specifically, we use the roberta-base and
+microsoft/deberta-v3-base checkpoints available
+through Hugging Face [20], which contain 125 million and
+86 million parameters, respectively. Such encoder models are
+well-suited for FL, as they can be readily fine-tuned for a wide
+range of practical downstream NLP tasks [29] (e.g., sentiment
+analysis, textual entailment, etc.). We fine-tune both models
+with the F ED O PT and FDA-O PT algorithms on the datasets
+outlined in Section IV-B.
+Of course, our ultimate goal in FL is to train accurate and
+robust models. Thus, as in most of the FL literature [11], we
+evaluate algorithms based on how efficiently they manage to
+do that. In other words, instead of comparing final accuracy
+scores or communication alone, we ask: how many communication rounds does it take to train a model with a specific
+target quality?
+To define those targets in a consistent and task-agnostic way,
+we express them as percentages of the best-known centralized performance. Given both models’ widespread adoption,
+their top-reported performance when fine-tuned in centralized
+settings is well-documented (see Table III). Naturally, due to
+the adverse conditions of data federation, FL performance is
+typically lower than centralized baselines. For example, the
+highest accuracy ever reported for RoBERTa when fine-tuned
+on MRPC is 90.2%; then, a target of 90% means attaining at
+least 81.18% accuracy (90% · 90.2 = 81.18%).
+TABLE III: Best-known accuracy scores (↑) for fine-tuning
+each model on each task in an ideal centralized setting. These
+values serve as target performance baselines
+MRPC↑
+90.2%
+
+RoBERTa [31]
+RTE↑
+SST-2↑
+78.7%
+94.8%
+
+QNLI↑
+92.8%
+
+DeBERTa [32]
+MNLI-m↑
+MNLI-mm↑
+90.6%
+90.7%
+
+E. Algorithms & Hyper-Parameters
+We evaluate the most widely used algorithms from the
+F ED O PT family and compare their performance with our
+proposed FDA-O PT algorithms. To ensure a fair, apples-toapples comparison, each F ED O PT algorithm is paired with
+its corresponding FDA-O PT variant using identical parameter
+configurations. For example, we compare F EDA DAM W with
+FDA-A DAM W, keeping all optimizer settings fixed. The algorithmic pairs we compare are outlined in Table I.
+Our goal is to conclusively demonstrate that FDA-O PT
+outperforms F ED O PT and that hyper-parameters proven effective for F ED O PT not only work for FDA-O PT but also yield
+better results. To show this, we first find the optimal hyper-
+
+7
+
+parameter configuration for each F ED O PT algorithm3 . Then,
+we apply these to our proposed FDA-O PT counterparts. Given
+this approach, evidence that FDA-O PT outperforms F ED O PT
+is particularly meaningful.
+Lastly, unless otherwise specified, we set the number of
+local steps τ equal to one epoch—that is, τ = ⌈e⌉ from
+Equation (4)—as this is the most common and widely accepted
+choice in the F ED O PT literature [29], [11], [15]. Moreover, we
+use a batch size of 8 and train for an exhaustive number of
+rounds, T ∈ {100, . . . , 1000}, ensuring that training continues
+well beyond likely convergence.
+V. E XPERIMENTAL R ESULTS & A NALYSIS
+In this section, we evaluate the performance of FDA-O PT
+against F ED O PT across a variety of FL tasks, focusing on
+two key aspects: communication efficiency and convergence
+behavior, for the same model quality. Notably, our FDA-O PT
+algorithms operate under configurations optimized for their
+F ED O PT competitors—which makes the following observed
+improvements all the more noteworthy.
+A. Main Findings
+The main findings of our experimental analyses are the
+following:
+• Communication-Efficiency. FDA-O PT demonstrates significant improvements in communication-efficiency. On average, it is 2.15× more efficient in the cross-silo setting and
+1.8× in the cross-device setting to train the highest accuracy
+models.
+• Convergence. FDA-O PT converges to 5–10× lower training loss than F ED O PT within the same number of rounds.
+The cross-silo setting is characterized by a sharp initial drop
+in loss, which is less pronounced in the cross-device setting.
+• Stability. FDA-O PT is more robust across different initial
+local training step values, τ , while F ED O PT often fails
+to converge. Moreover, the communication improvements
+mirror those observed in the default case.
+B. Communication-Efficiency
+The communication overhead incurred by each algorithm
+is directly analogous to the number of rounds. For F ED O PT,
+communication between clients and the server occurs only
+at the end of each round. In FDA-O PT, there is additional
+communication due to the transmission of small sketches.
+However, the size of these sketches is negligible compared
+to the overall communication cost of transmitting language
+models (it is ×106 smaller).
+As is standard in the literature [33], we evaluate our
+algorithms by comparing their performance against predefined
+3 For each F ED O PT algorithm and dataset/task combination, we perform an
+exhaustive grid search to identify the best-performing hyper-parameters. For
+example, to optimize F EDA DAM training RoBERTa on MRPC, we evaluate a
+5 × 5 grid of client and server learning rate combinations—25 configurations
+in total—and select the one achieving the highest accuracy. Across all models,
+tasks, and optimizers, this process amounts to roughly 700 distinct training
+runs. While this substantial experimental effort is not emphasized in the main
+text due to space constraints, it underpins all reported results.
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+8
+
+TABLE IV: Comparison of F ED O PT and FDA-O PT in communication-efficiency for training RoBERTa and DeBERTaV3
+across different datasets to achieve target metrics. The table reports the number of rounds required to reach 85%, 90%, 95%,
+and 99% of the top-reported results in the literature (see Table III)—naturally, the fewer rounds, the better (↓). For example, in
+the bottom-left cell, F EDA DAG RAD requires 29 rounds to achieve 90% of the best-reported accuracy for MRPC (i.e., at least
+90% · 90.2 = 81.18%), while FDA-A DAG RAD achieves the same in 21 rounds, making it 1.4× more efficient. Similarly, it
+has a speedup of 1.5× for 95%. The “Avg. FDA-O PT Speedup” row is computed by averaging the individual FDA-O PT vs.
+F ED O PT speedup values across each column
+
+F EDAVG
+FDA-SGD (ours)
+F EDAVG M
+FDA-SGDM (ours)
+F EDA DAM
+FDA-A DAM (ours)
+F EDA DAM W
+FDA-A DAM W (ours)
+F EDA DAG RAD
+FDA-A DAG RAD (ours)
+Avg. FDA-O PT Speedup
+
+MRPC
+90%↓
+95%↓
+26
+30
+6
+10
+21
+31
+5
+16
+20
+40
+7
+11
+17
+25
+14
+16
+29
+35
+21
+23
+2.8×
+2.3×
+
+RoBERTa
+RTE
+SST-2
+90%↓
+95%↓
+95%↓
+99%↓
+67
+103
+8
+93
+16
+20
+7
+43
+111
+182
+30
+91
+41
+126
+12
+41
+118
+153
+12
+42
+72
+188
+8
+25
+118
+160
+12
+35
+71
+176
+8
+14
+20
+96
+21
+67
+18
+54
+7
+24
+2.3×
+2×
+1.9×
+2.3×
+
+target metrics—such as accuracy (↑). The primary objective of
+the algorithms is to train a model that attains the target metric.
+Once they first do, we assess their communication efficiency
+by examining the number of FL rounds they required (↓).
+Table IV illustrates this evaluation.
+Cross-Silo. The cross-silo setting includes RoBERTa trained
+on the MRPC and RTE datasets, as outlined in Table II.
+• RoBERTa on MRPC. As per Table IV, FDA-O PT demonstrates superior communication-efficiency, with an average
+speedup of 2.3×-2.8× compared to F ED O PT. It is 2.8×
+more efficient in reaching 90% of the target metric, and
+2.3× for 95%.
+• RoBERTa on RTE. Similar trends are observed for the RTE
+dataset. FDA-O PT achieves average speedups of 2×-2.3×
+over F ED O PT, with specific gains of 2.3× for 90%, and 2×
+for 95% of the target metrics.
+When the goal is to train the most accurate model—defined
+here as achieving 95% of the top-reported metrics—FDAO PT is, on average, 2.15× more communication-efficient in
+the cross-silo setting.
+Cross-Device. In the cross-device setting, we analyze performance of training RoBERTa on the SST-2 and QNLI datasets,
+and DeBERTaV3 on MNLI-m and MNLI-mm, as outlined in
+Table II.
+• RoBERTa on SST-2. FDA-O PT consistently outperforms
+F ED O PT, achieving an improvement in communicationefficiency of 1.9×-2.3×. Specifically, FDA-O PT is 1.9×
+more efficient in achieving 90% of the target metric, and
+2.3× for 99%.
+• RoBERTa on QNLI. Again, FDA-O PT exhibits speedups
+ranging from 1.6×-2.6×. It is 2.6× more efficient at 90%,
+and 1.6× at 95% of the target metric.
+• DeBERTaV3 on MNLI-m. Similarly, FDA-O PT has improvements of 1.7× and 1.6×, corresponding to 85% and
+90% of the target metrics, respectively.
+• DeBERTaV3 on MNLI-mm. Lastly, FDA-O PT is 1.7×
+and 1.6× more communication-efficient than F ED O PT, for
+
+QNLI
+90%↓
+95%↓
+35
+71
+9
+23
+38
+81
+11
+44
+11
+22
+6
+20
+11
+22
+6
+20
+12
+24
+6
+20
+2.6×
+1.6×
+
+DeBERTaV3
+MNLI-m
+MNLI-mm
+85%↓
+90%↓
+85%↓
+90%↓
+12
+16
+12
+15
+4
+8
+4
+6
+29
+35
+29
+35
+12
+15
+12
+15
+11
+12
+11
+12
+9
+10
+9
+10
+57
+66
+57
+66
+43
+54
+42
+52
+8
+15
+8
+11
+14
+15
+6
+14
+1.7×
+1.6×
+1.9×
+1.6×
+
+attaining 85% and 90% of the target accuracies, respectively.
+Similarly, in the cross-device setting, FDA-O PT achieves an
+average improvement in communication-efficiency of 1.8×
+when training models to attain the highest possible accuracy
+targets.
+C. Convergence
+Analyzing training loss progression is key to understanding the convergence behavior of FL algorithms. It provides
+insights into how quickly and effectively models learn—
+essentially, their ability to minimize objectives. In this subsection we analyze Figure 4 which compares the performance
+of FDA-O PT and F ED O PT on two representative datasets
+from cross-silo and cross-device settings. The conclusions
+drawn regarding convergence pace and quality from these two
+datasets are indicative of the broader trends observed across
+all experiments.
+Cross-Silo. On the MRPC dataset—which simulates a crosssilo setting following Table II—all FDA-O PT algorithms
+demonstrate significantly faster convergence than their F E D O PT counterparts (Figure 4). For instance, FDA-SGD
+achieves a training loss 100× smaller than F EDAVG within
+the first 100 rounds. Additionally, both FDA-SGDM and
+FDA-A DAM W exhibit sharp drops within the initial 30–40
+rounds, outperforming F EDAVG M and F EDA DAM W, respectively, with FDA-SGDM stabilizing at a loss 10× smaller than
+F EDAVG M. Meanwhile, FDA-A DAM converges to a loss 5×
+smaller than F EDA DAM, and FDA-A DAG RAD consistently
+maintains a 5× lower loss than F EDA DAG RAD after the initial
+rounds.
+Cross-Device. On the SST-2 dataset—representing a crossdevice setting as outlined in Table II—all FDA-O PT algorithms consistently achieve 5–10× lower training loss compared to their F ED O PT counterparts (Figure 4). Unlike the
+cross-silo case, the initial drop in training loss is less pronounced, which is expected since each round involves only a
+
+100
+
+FedAdamW
+FDA-AdamW
+
+10 2
+100
+10 2
+
+FedAdaGrad
+FDA-AdaGrad
+
+0
+
+50
+
+Round
+
+100
+
+10 2
+100
+
+75
+50
+25
+75
+50
+25
+
+FedAdamW
+FDA-AdamW
+
+10 2
+100
+10 2
+
+FedAdaGrad
+FDA-AdaGrad
+
+0
+
+100
+
+Round
+
+200
+
+Fig. 4: Training Loss progression of training RoBERTa with
+FDA-O PT vs. F ED O PT on MRPC (left) and SST-2 (right)
+
+small subset of clients. This leads to initial updates that are
+less representative of the overall training distribution.
+
+FedAdam
+FDA-Adam
+
+FedAdamW
+FDA-AdamW
+
+FedAdaGrad
+FDA-AdaGrad
+Failed
+
+1 3 5
+
+Rounds
+
+60
+40
+20
+
+FedAdam
+FDA-Adam
+
+FedAvg
+FDA-SGD
+
+Rounds
+
+10 2
+
+100
+
+FedAvgM
+FDA-SGDM
+Failed
+
+75
+50
+25
+75
+50
+25
+40
+
+FedAvgM
+FDA-SGDM
+
+Rounds
+
+FedAdam
+FDA-Adam
+
+75
+50
+25
+
+SST-2, Target: 99%
+
+Rounds
+
+100
+
+FedAvgM
+FDA-SGDM
+
+10 2
+
+75
+50
+25
+
+FedAvg
+FDA-SGD
+
+15
+
+20
+
+Training Steps (in epochs)
+
+Rounds
+
+10 2
+
+100
+
+Rounds
+
+FedAvgM
+FDA-SGDM
+
+FedAvg
+FDA-SGD
+
+10 2
+
+Rounds
+
+100
+
+MRPC, Target: 95%
+
+Rounds
+
+FedAvg
+FDA-SGD
+
+SST-2
+
+100
+
+Rounds
+
+10 2
+
+9
+
+Rounds
+
+MRPC
+
+100
+
+Train Loss Train Loss Train Loss Train Loss Train Loss
+
+Train Loss Train Loss Train Loss Train Loss Train Loss
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+FedAdam
+FDA-Adam
+
+30
+20
+
+FedAdamW
+FDA-AdamW
+
+40
+20
+75
+50
+25
+
+FedAdaGrad
+FDA-AdaGrad
+
+1 3 5
+
+15
+
+20
+
+Training Steps (in epochs)
+
+Fig. 5: Training RoBERTa with FDA-O PT vs. F ED O PT for
+varying initial local training steps τ (measured in epochs).
+We report the number of rounds required to attain the target
+accuracy. Failure to converge is marked with “×”
+
+D. Stability to Local Training Extension
+Empirical evidence suggests that increasing the number of
+local training steps τ can lead to degraded performance or nonconvergence altogether [33], [12]. Since our scheme extends
+local training even further (τ̃ ≫ τ ), it is crucial to examine
+whether this extension introduces any instability. To this end,
+we train RoBERTa on MRPC (cross-silo) and SST-2 (crossdevice) using a range of values for τ .
+The results, shown in Figure 5, reveal two key insights.
+First, in every one of the 10 subplots, FDA-O PT consistently requires fewer training rounds than F ED O PT. Across
+all 50 individual setups, FDA-O PT outperforms F ED O PT
+in 40 cases—often by a large margin. Conversely, F ED O PT
+shows only marginal improvements in the remaining 10 cases.
+Second, and most importantly, FDA-O PT converges reliably
+across all experiments. In contrast, F ED O PT fails to converge
+in 4 out of 50 (specifically, F EDAVG M and F EDA DAG RAD
+on MRPC). This is particularly problematic in FL, where nonconvergence is almost impossible to detect and may lead to
+severe, and exploding communication cost.
+These findings highlight that FDA-O PT is not only more
+efficient, but also inherently stable and safe for extended local
+training intervals—a direct result of monitoring the variance.
+VI. R ELATED W ORK
+This section reviews related work on communicationefficient FL.
+Round Termination. Several works have explored strategies
+for determining the round termination intervals in FL. The
+study in [34] aims to find a fixed, optimal interval by balancing
+
+local computation and aggregation constraints. In contrast,
+[35] analyzes the trade-off between fast convergence and
+round completion rates under strongly convex client objectives,
+leading to a decaying round duration scheme. Similarly, [36]
+minimizes convergence error with respect to wall-clock time
+by progressively decreasing the round duration. On the other
+hand, [37] focuses on minimizing communication rounds for a
+fixed number of model updates, which results in an increasing
+sequence of round duration intervals. Unlike these approaches,
+which rely on predefined schedules—whether fixed, decaying,
+or increasing—FDA-O PT makes round termination decisions
+dynamically, in real-time, based on the state of the training.
+Convergence. The most direct way to alleviate the communication burden in FL is to accelerate convergence. This
+motivated the development of the F ED O PT family (Section
+II-B). However, FL algorithms still struggle with high heterogeneity, where different clients converge to disparate and often
+conflicting local minima [38], [11], [39], ultimately slowing
+down convergence. To address this, SCAFFOLD introduced
+control variates to correct client drift [38]. Similarly, the Mime
+framework [40] leverages both control variates and server
+statistics. F ED P ROX[41] tackles heterogeneity by adding an
+L2 regularization term. Notably, it has been demonstrated
+that F ED O PT outperforms F ED P ROX in NLP tasks similar
+to ours [29]. Lastly, F ED DYN [42] introduces a dynamic
+regularizer, ensuring that client convergence aligns with the
+stationary point of the global objective. Importantly, FDAO PT is orthogonal to these optimization methods as we focus
+on a complementary aspect: when to terminate rounds.
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+A. Hyper-parameter Selection
+In this Appendix, we detail the approach for identifying
+the optimal configuration for each F ED O PT algorithm when
+training a specific model on a specific dataset. Algorithms in
+the F ED O PT family are highly sensitive to both client and
+server learning rates, and their interaction is often task-specific
+and unpredictable. We conduct a grid search to determine the
+best hyper-parameters for each dataset and algorithm. The final
+selections based on this process are summarized in Table V.
+As a representative example, consider the RoBERTa model
+trained MRPC dataset. We tune learning rates using a
+commonly adopted search grid [33] (Figure 6). Specifically we investigate server and client learning rates in
+{10−5 , 10−4 , . . . , 10−1 } for F EDA DAG RAD, following wellestablished guidelines [18]. We then train RoBERTa with
+F EDA DAG RAD for T = 100 rounds, recording the highest
+accuracy achieved across all rounds. As shown in Figure 6, the
+
+FedAvgM
+
+Accuracy
+Client Learning Rate (log10 )
+
+Accuracy
+Client Learning Rate (log10 )
+
+0 68.4
+
+FedAdam
+
+1 31.6 68.4 68.4 70.8 68.4
+
+1 68.4 68.4 68.4 68.4 68.4
+
+1 76.2 85
+2 86.8 80
+
+80
+
+2 31.6 68.4 71.6 87.2 68.4
+
+70
+
+2 82.1 85.8 68.4 68.4 68.4
+
+3 88.7 75
+4 68.6 70
+
+3 31.6 68.4 68.4 88.5 88.5
+
+60
+
+3 87.5 88.2 68.4 68.4 68.4
+
+80
+
+4 31.6 31.6 68.4 68.4 87.8
+
+50
+
+4 86.3 87.5 68.4 68.4 68.4
+
+75
+
+5 31.6 31.6 31.6 68.4 68.4
+4 3 2 1 0
+
+40
+
+5 86.0 89.7 68.4 68.4 68.4
+5 4 3 2 1
+
+70
+
+Server Learning Rate (log10 )
+
+FedAdamW
+
+90
+
+1 68.4 68.4 68.4 68.4 68.4
+
+85
+
+2 81.4 85.5 68.4 68.4 68.4
+
+FedAdaGrad
+
+1 68.9 71.6 68.4 68.4 68.4
+2 72.5 85.0 68.4 68.4 68.4
+
+85
+80
+
+80
+
+3 77.0 88.0 68.4 68.4 68.4
+
+4 86.3 86.5 68.4 68.4 68.4
+
+75
+
+4 78.2 87.8 68.4 68.4 68.4
+
+75
+
+70
+
+5 77.7 89.0 68.4 68.4 68.4
+5 4 3 2 1
+
+70
+
+Server Learning Rate (log10 )
+
+Accuracy
+
+Server Learning Rate (log10 )
+
+3 86.5 89.2 68.4 68.4 68.4
+
+5 85.0 90.2 68.4 68.4 68.4
+5 4 3 2 1
+
+85
+
+Accuracy
+
+5 68.4
+0
+
+Accuracy
+Client Learning Rate (log10 )
+
+In this work, we introduced the FDA-O PT family of
+algorithms, a unified generalization of both FDA and F E D O PT , addressing their core limitations. We empirically prove
+that FDA-O PT is more communication efficient and reliable
+than F ED O PT. Furthermore, through carefully designed experiments, we demonstrating that FDA-O PT can seamlessly
+replace F ED O PT, as it can be directly configured using settings
+from the F ED O PT literature. To this end, each comparison
+between the two algorithmic families was conducted using the
+best-performing configurations for our competitor, F ED O PT—
+showing that well-established settings from the literature can
+be applied to our algorithms without modification. Importantly,
+even under these “unfair” conditions, FDA-O PT achieves at
+least 2× greater communication-efficiency on average and
+consistently converges to 5×–10× lower training loss. These
+findings hint at significant practical implications for improving
+modern FL libraries and real-world deployments.
+
+FedAvg
+
+Client Learning Rate (log10 )
+
+VII. C ONCLUSION
+
+best-performing configuration for F EDA DAG RAD on MRPC
+reached 89% accuracy with server and client learning rates of
+10−4 and 10−5 , respectively. These values are taken as optimal
+for training RoBERTa with F EDA DAG RAD on MRPC.
+We then apply these optimal learning rates to the
+FDA-O PT counterpart. Specifically, when training RoBERTa
+with FDA-A DAG RAD on MRPC, we use the server and client
+learning rates of 10−4 and 10−5 , respectively, as determined
+from the above analysis. While these values are most likely
+not optimal for FDA-A DAG RAD, our goal is to conclusively
+demonstrate that FDA-O PT outperforms F ED O PT and that
+hyper-parameters proven effective for F ED O PT not only work
+for FDA-O PT but also yield better results. This has the powerful implication that we can seamlessly replace all FDA-O PT
+algorithms with F ED O PT.
+Client Learning Rate (log10 )
+
+PEFT. Parameter-efficient fine-tuning (PEFT) [43], [44], [45],
+[46] trains only a small subset of a model’s parameters while
+keeping the rest frozen. One of the most widely used approaches, LoRA [45], injects low-rank adaptation matrices into
+a transformer’s frozen attention layers, reducing the number of
+trainable parameters to < 1%. Given the communication constraints in FL, recent studies have explored the applicability of
+PEFT methods in this setting [26], [47]. However, techniques
+like LoRA struggle with the high heterogeneity present in
+FL [47]. SLoRA [48] addresses this issue by leveraging sparse
+fine-tuning [49] to initialize the injected parameters more
+effectively. These PEFT methods can be readily integrated
+with FDA-O PT, as the choice of trainable parameters, w,
+remains user-defined.
+Compression. Another way to reduce communication in FL
+is to compress transmitted information using techniques like
+quantization [50] and sparsification [51], [52]. A comprehensive survey of these methods is provided in [53]. Notably,
+compression is orthogonal to our approach and can be seamlessly integrated with FDA-O PT.
+
+10
+
+Server Learning Rate (log10 )
+
+Fig. 6: The highest testing accuracy of RoBERTa on the
+MRPC dataset during the first 100 rounds of training, across
+various client and server optimizer learning rates. The MRPC
+test set is imbalanced, with 68.4% of the pairs labeled as
+positive and 31.6% as negative. As a result, these two accuracy
+values indicate that the model is always choosing one class,
+and should be treated as signs of non-convergence. Notably,
+F EDAVG has an averaging aggregation scheme
+
+TABLE V: Best-performing learning rates (log10 ) for training
+RoBERTa and DeBERTaV3 on different datasets using each
+F ED O PT algorithm. S ERVERO PT is shown on top and C LIEN T O PT on the bottom within each cell. For example, the bottomleft cell corresponds to training RoBERTa on MRPC with
+F EDA DAG RAD, where the optimal learning rates are 10−4
+for server-side A DAG RAD and 10−5 for client-side SGD
+
+F EDAVG
+F EDAVG M
+F EDA DAM
+F EDA DAM W
+F EDA DAG RAD
+
+MRPC
+0
+−3
+0
+−3
+−4
+−4
+−4
+−5
+−4
+−5
+
+RoBERTa
+RTE
+SST-2
+0
+0
+−3
+−3
+−1
+0
+−3
+−4
+−5
+−4
+−5
+−4
+−5
+−4
+−5
+−4
+−4
+−4
+−3
+−4
+
+QNLI
+0
+−3
+0
+−3
+−4
+−3
+−4
+−3
+−4
+−3
+
+DeBERTaV3
+MNLI-m/mm
+0
+−2
+0
+−3
+−4
+−2
+−4
+−4
+−4
+−2
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+R EFERENCES
+[1] G. Yan, H. Wang, X. Yuan, and J. Li, “Fedrola: Robust federated learning
+against model poisoning via layer-based aggregation,” in Proceedings of
+the 30th ACM SIGKDD Conference on Knowledge Discovery and Data
+Mining, ser. KDD ’24. New York, NY, USA: Association for Computing
+Machinery, 2024, p. 3667–3678.
+[2] Y. Jiang, X. Luo, Y. Wu, X. Zhu, X. Xiao, and B. C. Ooi, “On data
+distribution leakage in cross-silo federated learning,” IEEE Transactions
+on Knowledge and Data Engineering, vol. 36, no. 7, pp. 3312–3328,
+2024.
+[3] D. Chai, L. Wang, L. Yang, J. Zhang, K. Chen, and Q. Yang, “A
+survey for federated learning evaluations: Goals and measures,” IEEE
+Transactions on Knowledge and Data Engineering, vol. 36, no. 10, pp.
+5007–5024, 2024.
+[4] Q. Li, Z. Wen, Z. Wu, S. Hu, N. Wang, Y. Li, X. Liu, and B. He, “A
+survey on federated learning systems: Vision, hype and reality for data
+privacy and protection,” IEEE Transactions on Knowledge and Data
+Engineering, vol. 35, no. 4, pp. 3347–3366, 2023.
+[5] B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y. Arcas,
+“Communication-Efficient Learning of Deep Networks from Decentralized Data,” in Proceedings of the 20th International Conference
+on Artificial Intelligence and Statistics, ser. Proceedings of Machine
+Learning Research, A. Singh and J. Zhu, Eds., vol. 54. PMLR, 20–22
+Apr 2017, pp. 1273–1282.
+[6] F. Xu, Q. Lin, J. Han, T. Zhao, J. Liu, and E. Cambria, “Are large language models really good logical reasoners? a comprehensive evaluation
+and beyond,” IEEE Transactions on Knowledge and Data Engineering,
+vol. 37, no. 4, pp. 1620–1634, 2025.
+[7] L. Hu, Z. Liu, Z. Zhao, L. Hou, L. Nie, and J. Li, “A survey of
+knowledge enhanced pre-trained language models,” IEEE Transactions
+on Knowledge and Data Engineering, vol. 36, no. 4, pp. 1413–1430,
+2024.
+[8] H. Woisetschläger, A. Erben, S. Wang, R. Mayer, and H.-A. Jacobsen,
+“Federated fine-tuning of llms on the very edge: The good, the bad, the
+ugly,” in Proceedings of the Eighth Workshop on Data Management for
+End-to-End Machine Learning, ser. DEEM ’24. New York, NY, USA:
+Association for Computing Machinery, 2024, p. 39–50.
+[9] F. Wu, Z. Li, Y. Li, B. Ding, and J. Gao, “Fedbiot: Llm local finetuning in federated learning without full model,” in Proceedings of the
+30th ACM SIGKDD Conference on Knowledge Discovery and Data
+Mining, ser. KDD ’24. New York, NY, USA: Association for Computing
+Machinery, 2024, p. 3345–3355.
+[10] H. Woisetschläger, A. Erben, S. Wang, R. Mayer, and H.-A. Jacobsen,
+“A survey on efficient federated learning methods for foundation model
+training,” in Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence, IJCAI-24, K. Larson, Ed. International
+Joint Conferences on Artificial Intelligence Organization, 8 2024, pp.
+8317–8325, survey Track.
+[11] S. J. Reddi, Z. Charles, M. Zaheer, Z. Garrett, K. Rush, J. Konečný,
+S. Kumar, and H. B. McMahan, “Adaptive federated optimization,” in
+9th International Conference on Learning Representations, ICLR 2021,
+Virtual Event, Austria, May 3-7, 2021, 2021.
+[12] H. Yu, S. Yang, and S. Zhu, “Parallel restarted sgd with faster
+convergence and less communication: demystifying why model averaging works for deep learning,” in Proceedings of the Thirty-Third
+AAAI Conference on Artificial Intelligence and Thirty-First Innovative Applications of Artificial Intelligence Conference and Ninth AAAI
+Symposium on Educational Advances in Artificial Intelligence, ser.
+AAAI’19/IAAI’19/EAAI’19. AAAI Press, 2019.
+[13] M. Theologitis, G. Frangias, G. Anestis, V. Samoladas, and A. Deligiannakis, “Communication-efficient distributed deep learning via federated
+dynamic averaging,” in Proceedings 28th International Conference on
+Extending Database Technology, EDBT 2025, Barcelona, Spain, March
+25 - March 28. OpenProceedings.org, 2025, p. 411–424.
+[14] D. Kingma and J. Ba, “Adam: A method for stochastic optimization,”
+in International Conference on Learning Representations (ICLR), San
+Diego, CA, USA, 2015.
+[15] T. H. Hsu, H. Qi, and M. Brown, “Measuring the effects of non-identical
+data distribution for federated visual classification,” CoRR, 2019.
+[16] I. Sutskever, J. Martens, G. Dahl, and G. Hinton, “On the importance
+of initialization and momentum in deep learning,” in Proceedings of the
+30th International Conference on Machine Learning, ser. Proceedings
+of Machine Learning Research, S. Dasgupta and D. McAllester, Eds.,
+vol. 28, no. 3. Atlanta, Georgia, USA: PMLR, 17–19 Jun 2013, pp.
+1139–1147.
+
+11
+
+[17] I. Loshchilov and F. Hutter, “Decoupled weight decay regularization,”
+in International Conference on Learning Representations, 2019.
+[18] J. Duchi, E. Hazan, and Y. Singer, “Adaptive subgradient methods
+for online learning and stochastic optimization,” Journal of Machine
+Learning Research, vol. 12, no. 61, pp. 2121–2159, 2011.
+[19] G. Cormode and M. Garofalakis, “Sketching streams through the net:
+Distributed approximate query tracking,” in Proceedings of the 31st
+International Conference on Very Large Data Bases, ser. VLDB ’05.
+VLDB Endowment, 2005, p. 13–24.
+[20] T. Wolf, L. Debut, V. Sanh, J. Chaumond, C. Delangue, A. Moi,
+P. Cistac, T. Rault, R. Louf, M. Funtowicz, J. Davison, S. Shleifer,
+P. von Platen, C. Ma, Y. Jernite, J. Plu, C. Xu, T. Le Scao, S. Gugger,
+M. Drame, Q. Lhoest, and A. Rush, “Transformers: State-of-the-art
+natural language processing,” in Proceedings of the 2020 Conference on
+Empirical Methods in Natural Language Processing: System Demonstrations, Q. Liu and D. Schlangen, Eds.
+Online: Association for
+Computational Linguistics, Oct. 2020, pp. 38–45.
+[21] A. Paszke, S. Gross, F. Massa, A. Lerer, J. Bradbury, G. Chanan,
+T. Killeen, Z. Lin, N. Gimelshein, L. Antiga, A. Desmaison, A. Köpf,
+E. Yang, Z. DeVito, M. Raison, A. Tejani, S. Chilamkurthy, B. Steiner,
+L. Fang, J. Bai, and S. Chintala, PyTorch: an imperative style, highperformance deep learning library.
+Red Hook, NY, USA: Curran
+Associates Inc., 2019.
+[22] A. Wang, A. Singh, J. Michael, F. Hill, O. Levy, and S. Bowman,
+“GLUE: A multi-task benchmark and analysis platform for natural
+language understanding,” in Proceedings of the 2018 EMNLP Workshop
+BlackboxNLP: Analyzing and Interpreting Neural Networks for NLP,
+T. Linzen, G. Chrupała, and A. Alishahi, Eds. Brussels, Belgium:
+Association for Computational Linguistics, Nov. 2018, pp. 353–355.
+[23] W. B. Dolan and C. Brockett, “Automatically constructing a corpus
+of sentential paraphrases,” in Proceedings of the Third International
+Workshop on Paraphrasing (IWP2005), 2005.
+[24] R. Socher, A. Perelygin, J. Wu, J. Chuang, C. D. Manning, A. Ng,
+and C. Potts, “Recursive deep models for semantic compositionality
+over a sentiment treebank,” in Proceedings of the 2013 Conference
+on Empirical Methods in Natural Language Processing, D. Yarowsky,
+T. Baldwin, A. Korhonen, K. Livescu, and S. Bethard, Eds. Seattle,
+Washington, USA: Association for Computational Linguistics, Oct.
+2013, pp. 1631–1642.
+[25] A. Williams, N. Nangia, and S. Bowman, “A broad-coverage challenge
+corpus for sentence understanding through inference,” in Proceedings of
+the 2018 Conference of the North American Chapter of the Association
+for Computational Linguistics: Human Language Technologies, Volume
+1 (Long Papers). Association for Computational Linguistics, 2018, pp.
+1112–1122. [Online]. Available: http://aclweb.org/anthology/N18-1101
+[26] Z. Zhang, Y. Yang, Y. Dai, Q. Wang, Y. Yu, L. Qu, and Z. Xu, “FedPETuning: When federated learning meets the parameter-efficient tuning
+methods of pre-trained language models,” in Findings of the Association
+for Computational Linguistics: ACL 2023, A. Rogers, J. Boyd-Graber,
+and N. Okazaki, Eds. Toronto, Canada: Association for Computational
+Linguistics, Jul. 2023, pp. 9963–9977.
+[27] Y. Jiang, X. Luo, Y. Wu, X. Zhu, X. Xiao, and B. C. Ooi, “On data
+distribution leakage in cross-silo federated learning,” IEEE Transactions
+on Knowledge and Data Engineering, vol. 36, no. 7, pp. 3312–3328,
+2024.
+[28] Q. Li, Y. Diao, Q. Chen, and B. He, “Federated learning on non-iid data
+silos: An experimental study,” in 38th IEEE International Conference
+on Data Engineering, ICDE 2022, Kuala Lumpur, Malaysia, May 9-12,
+2022. IEEE, 2022, pp. 965–978.
+[29] B. Y. Lin, C. He, Z. Ze, H. Wang, Y. Hua, C. Dupuy, R. Gupta,
+M. Soltanolkotabi, X. Ren, and S. Avestimehr, “FedNLP: Benchmarking
+federated learning methods for natural language processing tasks,” in
+Findings of the Association for Computational Linguistics: NAACL
+2022, M. Carpuat, M.-C. de Marneffe, and I. V. Meza Ruiz, Eds. Seattle,
+United States: Association for Computational Linguistics, Jul. 2022, pp.
+157–175.
+[30] Z. Qin, S. Deng, M. Zhao, and X. Yan, “Fedapen: Personalized crosssilo federated learning with adaptability to statistical heterogeneity,”
+in Proceedings of the 29th ACM SIGKDD Conference on Knowledge
+Discovery and Data Mining, ser. KDD ’23. New York, NY, USA:
+Association for Computing Machinery, 2023, p. 1954–1964.
+[31] Y. Liu, M. Ott, N. Goyal, J. Du, M. Joshi, D. Chen, O. Levy, M. Lewis,
+L. Zettlemoyer, and V. Stoyanov, “Roberta: A robustly optimized BERT
+pretraining approach,” CoRR, vol. abs/1907.11692, 2019.
+[32] P. He, J. Gao, and W. Chen, “Debertav3: Improving deberta using
+electra-style pre-training with gradient-disentangled embedding sharing,” 2023.
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+[33] J. Wang, Z. Charles, Z. Xu, G. Joshi, H. B. McMahan, B. A. y Arcas,
+M. Al-Shedivat, G. Andrew, S. Avestimehr, K. Daly, D. Data, S. N.
+Diggavi, H. Eichner, A. Gadhikar, Z. Garrett, A. M. Girgis, F. Hanzely,
+A. Hard, C. He, S. Horváth, Z. Huo, A. Ingerman, M. Jaggi, T. Javidi,
+P. Kairouz, S. Kale, S. P. Karimireddy, J. Konečný, S. Koyejo, T. Li,
+L. Liu, M. Mohri, H. Qi, S. J. Reddi, P. Richtárik, K. Singhal, V. Smith,
+M. Soltanolkotabi, W. Song, A. T. Suresh, S. U. Stich, A. Talwalkar,
+H. Wang, B. E. Woodworth, S. Wu, F. X. Yu, H. Yuan, M. Zaheer,
+M. Zhang, T. Zhang, C. Zheng, C. Zhu, and W. Zhu, “A field guide to
+federated optimization,” CoRR, vol. abs/2107.06917, 2021.
+[34] S. Wang, T. Tuor, T. Salonidis, K. K. Leung, C. Makaya, T. He, and
+K. Chan, “Adaptive federated learning in resource constrained edge computing systems,” IEEE Journal on Selected Areas in Communications,
+vol. 37, no. 6, pp. 1205–1221, 2019.
+[35] J. Mills, J. Hu, and G. Min, “Faster federated learning with decaying
+number of local sgd steps,” IEEE Trans. Parallel Distrib. Syst., vol. 34,
+no. 7, p. 2198–2207, jul 2023.
+[36] J. Wang and G. Joshi, “Adaptive communication strategies to achieve the
+best error-runtime trade-off in local-update sgd,” Systems and Machine
+Learning (SysML) Conference, 2018.
+[37] F. Haddadpour, M. M. Kamani, M. Mahdavi, and V. R. Cadambe,
+“Local sgd with periodic averaging: Tighter analysis and adaptive
+synchronization,” in Neural Information Processing Systems, 2019.
+[38] S. P. Karimireddy, S. Kale, M. Mohri, S. Reddi, S. Stich, and A. T.
+Suresh, “SCAFFOLD: Stochastic controlled averaging for federated
+learning,” in Proceedings of the 37th International Conference on
+Machine Learning, ser. Proceedings of Machine Learning Research,
+H. D. III and A. Singh, Eds., vol. 119. PMLR, 13–18 Jul 2020, pp.
+5132–5143.
+[39] P. Wenig and T. Papenbrock, “Datagossip: A data exchange extension
+for distributed machine learning algorithms,” in Proceedings of the 25th
+International Conference on Extending Database Technology, EDBT
+2022, Edinburgh, UK, March 29 - April 1, 2022, J. Stoyanovich,
+J. Teubner, P. Guagliardo, M. Nikolic, A. Pieris, J. Mühlig, F. Özcan,
+S. Schelter, H. V. Jagadish, and M. Z. 0001, Eds., 2022.
+[40] S. P. Karimireddy, M. Jaggi, S. Kale, M. Mohri, S. J. Reddi, S. U. Stich,
+and A. T. Suresh, “Mime: Mimicking centralized stochastic algorithms
+in federated learning,” 2021.
+[41] T. Li, A. K. Sahu, M. Zaheer, M. Sanjabi, A. Talwalkar, and V. Smith,
+“Federated optimization in heterogeneous networks,” in Proceedings of
+the Third Conference on Machine Learning and Systems, MLSys 2020,
+Austin, TX, USA, March 2-4, 2020, I. S. Dhillon, D. S. Papailiopoulos,
+and V. Sze, Eds. mlsys.org, 2020.
+[42] D. A. E. Acar, Y. Zhao, R. Matas, M. Mattina, P. Whatmough, and
+V. Saligrama, “Federated learning based on dynamic regularization,” in
+International Conference on Learning Representations, 2021.
+[43] X. L. Li and P. Liang, “Prefix-tuning: Optimizing continuous prompts
+for generation,” in Proceedings of the 59th Annual Meeting of the
+Association for Computational Linguistics and the 11th International
+Joint Conference on Natural Language Processing (Volume 1: Long
+Papers), C. Zong, F. Xia, W. Li, and R. Navigli, Eds.
+Online:
+Association for Computational Linguistics, Aug. 2021, pp. 4582–4597.
+[44] B. Lester, R. Al-Rfou, and N. Constant, “The power of scale for
+parameter-efficient prompt tuning,” in Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, M.-F.
+Moens, X. Huang, L. Specia, and S. W.-t. Yih, Eds. Online and Punta
+Cana, Dominican Republic: Association for Computational Linguistics,
+Nov. 2021, pp. 3045–3059.
+[45] E. J. Hu, yelong shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang,
+and W. Chen, “LoRA: Low-rank adaptation of large language models,”
+in International Conference on Learning Representations, 2022.
+[46] E. Ben Zaken, Y. Goldberg, and S. Ravfogel, “BitFit: Simple parameterefficient fine-tuning for transformer-based masked language-models,” in
+Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers), S. Muresan, P. Nakov, and
+A. Villavicencio, Eds. Dublin, Ireland: Association for Computational
+Linguistics, May 2022, pp. 1–9.
+[47] Y. Sun, Z. Li, Y. Li, and B. Ding, “Improving loRA in privacy-preserving
+federated learning,” in The Twelfth International Conference on Learning
+Representations, 2024.
+[48] S. Babakniya, A. Elkordy, Y. Ezzeldin, Q. Liu, K.-B. Song, M. ELKhamy, and S. Avestimehr, “SLoRA: Federated parameter efficient finetuning of language models,” in International Workshop on Federated
+Learning in the Age of Foundation Models in Conjunction with NeurIPS
+2023, 2023.
+[49] A. Ansell, E. Ponti, A. Korhonen, and I. Vulić, “Composable sparse finetuning for cross-lingual transfer,” in Proceedings of the 60th Annual
+
+12
+
+Meeting of the Association for Computational Linguistics (Volume 1:
+Long Papers), S. Muresan, P. Nakov, and A. Villavicencio, Eds. Dublin,
+Ireland: Association for Computational Linguistics, May 2022, pp.
+1778–1796.
+[50] N. Shlezinger, M. Chen, Y. Eldar, H. V. Poor, and S. Cui, “Uveqfed:
+Universal vector quantization for federated learning,” IEEE Transactions
+on Signal Processing, vol. 69, pp. 500–514, 01 2021.
+[51] A. F. Aji and K. Heafield, “Sparse communication for distributed
+gradient descent,” in Proceedings of the 2017 Conference on Empirical
+Methods in Natural Language Processing, M. Palmer, R. Hwa, and
+S. Riedel, Eds. Copenhagen, Denmark: Association for Computational
+Linguistics, Sep. 2017, pp. 440–445.
+[52] D. Basu, D. Data, C. Karakus, and S. Diggavi, Qsparse-local-SGD: distributed SGD with quantization, sparsification, and local computations.
+Red Hook, NY, USA: Curran Associates Inc., 2019.
+[53] Z. Wang, M. Wen, Y. Xu, Y. Zhou, J. H. Wang, and L. Zhang,
+“Communication compression techniques in distributed deep learning:
+A survey,” Journal of Systems Architecture, vol. 142, p. 102927, 2023.
+
+

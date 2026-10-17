@@ -210,6 +210,7 @@ __marimo__/
 venv/
 fdaopt/env.py
 manual.txt
-results/round_metrics/*.csv
-TODO.txt
-superorganizer.py
+results/output/.gitignore
+results/round_metrics/.gitignore
+graphify-out/
+graphify-out/*

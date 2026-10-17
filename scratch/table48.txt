@@ -1,0 +1,59 @@
+| Benchmark Setting | Method Configuration | Seeds | Peak Acc | Milestone 1 (Time, Cost) | Milestone 2 (Time, Cost) | Total Rounds | Complete MB | Steps | Mean Ep/Rd | Ep (A) | Ep (B) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **MNLI ($C=20, R=50, \alpha=1000$)** | <span style="color: #15803d;">**FDA Pure E1TO20 [Emax/1]**</span> | 2 | **0.7686** | R18 (11.06 h, 84.4 MB) | R21 (14.14 h, 98.4 MB) | 35 | 164.1 MB | 17,200 | 13.42 | 12.70 | 14.10 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.7644 | R21 (7.64 h, 98.4 MB) | R27 (10.99 h, 126.6 MB) | 44 | 206.2 MB | 12,740 | 7.76 | 7.74 | 7.77 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.7435 | R17 (9.56 h, 79.7 MB) | R22 (13.93 h, 103.1 MB) | 28 | 131.2 MB | 14,000 | 12.50 | 11.86 | 13.14 |
+|  | <span style="color: #1e40af;">FDA E3TO20 [Emax/1-BDISC]</span> | 1 | 0.7455 | R16 (11.31 h, 75.0 MB) | R22 (17.62 h, 103.1 MB) | 27 | 126.6 MB | 15,840 | 14.67 | 11.86 | 17.69 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.6957 | R24 (8.59 h, 112.5 MB) | — | 37 | 173.4 MB | 8,400 | 7.18 | 7.04 | 7.32 |
+|  | <span style="color: #b91c1c;">RoLoRA E20</span> | 2 | 0.7614 | R9 (10.69 h, 42.2 MB) | R11 (13.06 h, 51.6 MB) | 22 | 103.1 MB | 17,600 | 20.00 | 20.00 | 20.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.7660 | R13 (7.66 h, 60.9 MB) | R17 (10.01 h, 79.7 MB) | 29 | 135.9 MB | 11,200 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.6566 | R25 (7.40 h, 117.2 MB) | — | 39 | 182.8 MB | 6,500 | 5.00 | 5.00 | 5.00 |
+| **MNLI ($C=50, R=30, \alpha=1000$)** | <span style="color: #15803d;">FDA Pure E1TO20 [Emax/1]</span> | 2 | 0.6985 | R20 (13.11 h, 234.4 MB) | R26 (17.88 h, 304.7 MB) | 30 | 351.6 MB | 5,832 | 12.15 | 11.43 | 12.87 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.5616 | R30 (13.49 h, 351.6 MB) | — | 30 | 351.6 MB | 3,464 | 7.22 | 7.20 | 7.23 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.6781 | R22 (14.97 h, 257.8 MB) | R28 (19.85 h, 328.1 MB) | 30 | 351.6 MB | 5,872 | 12.23 | 11.40 | 13.07 |
+|  | <span style="color: #1e40af;">**FDA E3TO20 [Emax/1-BDISC]**</span> | 1 | **0.7257** | R18 (13.73 h, 210.9 MB) | R21 (16.28 h, 246.1 MB) | 30 | 351.6 MB | 7,136 | 14.87 | 11.47 | 18.27 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.5659 | R30 (13.46 h, 351.6 MB) | — | 30 | 351.6 MB | 3,664 | 7.63 | 7.80 | 7.47 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.6585 | R21 (12.36 h, 246.1 MB) | R29 (17.05 h, 339.8 MB) | 30 | 351.6 MB | 4,800 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.3566 | — | — | 30 | 351.6 MB | 2,400 | 5.00 | 5.00 | 5.00 |
+| **QNLI ($C=20, R=50, \alpha=1000$)** | <span style="color: #15803d;">FDA Pure E1TO20 [Emax/1]</span> | 2 | 0.7910 | — | — | 19 | 89.1 MB | 6,640 | 9.85 | 9.66 | 10.01 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.8009 | R17 (8.30 h, 79.7 MB) | — | 18 | 84.4 MB | 4,820 | 6.91 | 7.58 | 6.28 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.8137 | R12 (6.64 h, 56.2 MB) | — | 15 | 70.3 MB | 5,080 | 8.47 | 8.50 | 8.43 |
+|  | <span style="color: #1e40af;">**FDA E3TO20 [Emax/1-BDISC]**</span> | 1 | **0.8528** | R10 (7.11 h, 46.9 MB) | R14 (11.08 h, 65.6 MB) | 19 | 89.1 MB | 10,400 | 13.68 | 11.40 | 16.22 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.8131 | R14 (6.64 h, 65.6 MB) | — | 17 | 79.7 MB | 4,360 | 7.04 | 7.74 | 6.37 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.8006 | R6 (4.04 h, 28.1 MB) | — | 11 | 51.6 MB | 4,000 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.8179 | R15 (5.06 h, 70.3 MB) | — | 18 | 84.4 MB | 3,300 | 5.00 | 5.00 | 5.00 |
+| **QNLI ($C=50, R=30, \alpha=1000$)** | <span style="color: #15803d;">FDA Pure E1TO20 [Emax/1]</span> | 2 | 0.8277 | R12 (7.46 h, 140.6 MB) | R20 (12.61 h, 234.4 MB) | 25 | 293.0 MB | 3,728 | 10.89 | 10.21 | 11.52 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.8086 | R18 (8.26 h, 210.9 MB) | — | 29 | 339.8 MB | 3,056 | 7.35 | 7.61 | 7.11 |
+|  | <span style="color: #0369a1;">**FDA E3TO20 [Emax/1-NODISC]**</span> | 1 | **0.8450** | R13 (9.27 h, 152.3 MB) | R21 (15.03 h, 246.1 MB) | 27 | 316.4 MB | 5,264 | 12.19 | 11.93 | 12.46 |
+|  | <span style="color: #1e40af;">FDA E3TO20 [Emax/1-BDISC]</span> | 1 | 0.8210 | R12 (9.51 h, 140.6 MB) | R17 (14.19 h, 199.2 MB) | 18 | 210.9 MB | 3,712 | 12.89 | 9.33 | 16.44 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.7988 | R16 (10.03 h, 187.5 MB) | — | 27 | 316.4 MB | 3,838 | 7.78 | 8.23 | 7.37 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.8234 | R15 (10.02 h, 175.8 MB) | R22 (14.70 h, 257.8 MB) | 26 | 304.7 MB | 3,920 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.7882 | R26 (9.54 h, 304.7 MB) | — | 30 | 351.6 MB | 2,625 | 5.00 | 5.00 | 5.00 |
+| **QQP ($C=20, R=50, \alpha=1000$)** | <span style="color: #15803d;">**FDA Pure E1TO20 [Emax/1]**</span> | 2 | **0.7707** | R6 (1.40 h, 28.1 MB) | R10 (3.71 h, 46.9 MB) | 22 | 103.1 MB | 7,860 | 10.69 | 9.96 | 11.37 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.7417 | R9 (2.80 h, 42.2 MB) | R14 (4.41 h, 65.6 MB) | 15 | 70.3 MB | 3,640 | 6.50 | 6.18 | 6.79 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.7372 | R7 (1.74 h, 32.8 MB) | — | 10 | 46.9 MB | 3,000 | 7.50 | 7.00 | 8.00 |
+|  | <span style="color: #1e40af;">FDA E3TO20 [Emax/1-BDISC]</span> | 1 | 0.7617 | R7 (2.01 h, 32.8 MB) | R11 (4.37 h, 51.6 MB) | 14 | 65.6 MB | 5,880 | 10.50 | 7.43 | 13.57 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.7332 | R5 (1.32 h, 23.4 MB) | — | 9 | 42.2 MB | 1,860 | 5.47 | 6.88 | 4.17 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.7547 | R3 (1.36 h, 14.1 MB) | R4 (1.82 h, 18.8 MB) | 7 | 32.8 MB | 2,600 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.7358 | R6 (1.36 h, 28.1 MB) | — | 10 | 46.9 MB | 2,000 | 5.00 | 5.00 | 5.00 |
+| **QQP ($C=50, R=30, \alpha=1000$)** | <span style="color: #15803d;">FDA Pure E1TO20 [Emax/1]</span> | 2 | 0.7346 | — | — | 14 | 164.1 MB | 2,048 | 9.14 | 9.57 | 8.71 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.7360 | — | — | 19 | 222.7 MB | 1,808 | 6.25 | 6.33 | 6.18 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.7696 | R17 (7.62 h, 199.2 MB) | — | 20 | 234.4 MB | 3,504 | 10.95 | 10.00 | 11.90 |
+|  | <span style="color: #1e40af;">FDA E3TO20 [Emax/1-BDISC]</span> | 1 | 0.7833 | R15 (7.10 h, 175.8 MB) | R18 (9.71 h, 210.9 MB) | 18 | 210.9 MB | 3,456 | 12.00 | 8.89 | 15.11 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.7802 | R24 (7.59 h, 281.2 MB) | R29 (9.26 h, 339.8 MB) | 30 | 351.6 MB | 3,536 | 7.37 | 7.30 | 7.43 |
+|  | <span style="color: #b91c1c;">**RoLoRA E10**</span> | 2 | **0.7872** | R14 (6.24 h, 164.1 MB) | R22 (9.79 h, 257.8 MB) | 30 | 351.6 MB | 4,800 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.7536 | R30 (6.75 h, 351.6 MB) | — | 30 | 351.6 MB | 2,400 | 5.00 | 5.00 | 5.00 |
+| **SST-2 ($C=20, R=50, \alpha=1000$)** | <span style="color: #15803d;">FDA Pure E1TO20 [Emax/1]</span> | 2 | 0.9180 | R9 (1.57 h, 42.2 MB) | R11 (2.14 h, 51.6 MB) | 21 | 98.4 MB | 4,560 | 11.11 | 10.55 | 11.62 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.8767 | R13 (1.74 h, 60.9 MB) | — | 23 | 107.8 MB | 2,090 | 5.82 | 6.64 | 5.00 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.9025 | R10 (1.91 h, 46.9 MB) | R12 (2.30 h, 56.2 MB) | 13 | 60.9 MB | 2,040 | 7.85 | 7.14 | 8.67 |
+|  | <span style="color: #1e40af;">FDA E3TO20 [Emax/1-BDISC]</span> | 1 | 0.9128 | R8 (1.79 h, 37.5 MB) | R10 (2.34 h, 46.9 MB) | 16 | 75.0 MB | 3,680 | 11.50 | 7.75 | 15.25 |
+|  | <span style="color: #4338ca;">**FDA E3TO20 [Emax/2-Old]**</span> | 2 | **0.9186** | R9 (1.31 h, 42.2 MB) | R13 (1.82 h, 60.9 MB) | 24 | 112.5 MB | 3,420 | 7.43 | 7.83 | 7.04 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.9151 | R9 (1.94 h, 42.2 MB) | R11 (2.32 h, 51.6 MB) | 16 | 75.0 MB | 3,000 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.9031 | R13 (1.58 h, 60.9 MB) | R15 (1.82 h, 70.3 MB) | 22 | 103.1 MB | 2,100 | 5.00 | 5.00 | 5.00 |
+| **SST-2 ($C=50, R=30, \alpha=1000$)** | <span style="color: #15803d;">FDA Pure E1TO20 [Emax/1]</span> | 2 | 0.8968 | R17 (4.64 h, 199.2 MB) | — | 24 | 281.2 MB | 1,756 | 10.78 | 10.90 | 10.67 |
+|  | <span style="color: #059669;">FDA Pure E1TO20 [Emax/2]</span> | 2 | 0.8681 | R24 (2.89 h, 281.2 MB) | — | 30 | 351.6 MB | 1,396 | 6.91 | 7.27 | 6.55 |
+|  | <span style="color: #0369a1;">FDA E3TO20 [Emax/1-NODISC]</span> | 1 | 0.8968 | R16 (3.81 h, 187.5 MB) | — | 19 | 222.7 MB | 1,560 | 10.26 | 9.90 | 10.67 |
+|  | <span style="color: #1e40af;">**FDA E3TO20 [Emax/1-BDISC]**</span> | 1 | **0.9117** | R14 (4.10 h, 164.1 MB) | R16 (4.79 h, 187.5 MB) | 24 | 281.2 MB | 2,680 | 13.96 | 10.75 | 17.17 |
+|  | <span style="color: #4338ca;">FDA E3TO20 [Emax/2-Old]</span> | 2 | 0.8876 | R19 (2.90 h, 222.7 MB) | — | 24 | 281.2 MB | 1,212 | 7.20 | 7.75 | 6.65 |
+|  | <span style="color: #b91c1c;">RoLoRA E10</span> | 2 | 0.9037 | R13 (2.38 h, 152.3 MB) | R17 (2.70 h, 199.2 MB) | 22 | 257.8 MB | 1,760 | 10.00 | 10.00 | 10.00 |
+|  | <span style="color: #b91c1c;">RoLoRA E5</span> | 2 | 0.8750 | R25 (2.83 h, 293.0 MB) | — | 30 | 351.6 MB | 1,040 | 5.00 | 5.00 | 5.00 |

@@ -1,0 +1,1238 @@
+=== Page 2 ===
+Figure 1: (Left) Overview of the RoLoRA framework. (Right) Performance comparison with
+baselines on QQP in a 50-client setting, showing RoLoRA’s superior convergence speed and final
+accuracy.
+SLoRA [1] presents a hybrid approach that combines sparse fine-tuning with LoRA to address data
+heterogeneity in federated settings. Furthermore, FS-LLM [24] presents a framework for fine-tuning
+LLMs in federated environments. However, these studies typically apply the FedAVG algorithm
+directly to LoRA modules, resulting in in-exact model updates: the server average of LoRA-A and
+LoRA-B does not equal the effective adapter.
+To address the issue of in-exact model updates, a few recent works have proposed modifications to
+the down-projection and up-projection components in LoRA. In FlexLoRA [2], the authors propose
+updating these projections with matrix multiplication followed by truncated SVD. A related method
+is also considered in FLoRA [40]. Another approach, by Sun et al., introduces a federated finetuning
+framework named FFA-LoRA [32], which builds on LoRA by freezing the down-projection matrices
+across all clients and updating only the up-projection matrices. They apply differential privacy [13] to
+provide privacy guarantees for clients’ data. With a sufficient number of finetuning parameters, FFA-
+LoRA, using a larger learning rate, can achieve performance comparable to FedAVG of LoRA while
+reducing communication costs by half. However, we observe that with fewer finetuning parameters,
+FFA-LoRA is less robust than FedAVG of LoRA, primarily due to its reduced expressiveness from
+freezing down-projections. In this work, we explore the necessity of learning down-projection
+matrices and propose a federated fine-tuning framework with computational and communication
+advantages.
+We connect the objective of learning down-projection matrices in a federated setting to multitask
+linear representation learning (MLRL), an approach in which a shared low-rank representation is
+jointly learned across multiple tasks. While, to the best of our knowledge, the alternating optimization
+of down- and up-projection matrices has not been explored within the context of LoRA, prior works
+on MLRL [9, 34] have demonstrated the importance of alternately updating low-rank representations
+and task-specific heads, demonstrating the necessity of learning a shared representation. Inspired
+by MLRL, we tackle this challenge by employing alternating optimization for LoRA adapters. We
+theoretically establish that alternating updates to the two components of LoRA, while maintaining a
+common global model, enable effective optimization of down-projections and ensure convergence to
+the global minimizer in a tractable setting.
+1.1
+Main Contributions
+• RoLoRA framework. We propose RoLoRA, a robust federated fine-tuning framework
+based on the alternating optimization of LoRA as shown in Figure 1. RoLoRA fully leverages
+the expressiveness of LoRA adapters while keeping the computational and communication
+advantages.
+• Theoretical Insights. We prove that RoLoRA achieves exponential convergence to the
+global optimum for federated linear regression, reaching arbitrarily small errors, whereas
+FFA-LoRA’s fixed down-projections result in suboptimality proportional to the initialization
+error. Simple non-linear model experiments further validate the theoretical importance of
+updating the down-projections in practice. For the case of smooth non-convex loss functions
+we also provide a proof of convergence of our proposed method.
+• Empirical results. Through evaluations on language models (RoBERTa-Large, Llama-2-
+7B) across various tasks (GLUE, HumanEval, MMLU, Commonsense reasoning tasks), we
+demonstrate that RoLoRA maintains robustness against reductions in fine-tuning parameters
+and increases in client numbers compared to prior approaches.
+In summary, RoLoRA outperforms baselines with strong theoretical guarantees and robust perfor-
+mance across tasks and scales. It provides new insights into the role of down-projections, advancing
+2
+
+
+=== Page 3 ===
+the frontier of parameter-efficient federated learning, while its simple yet effective design ensures
+scalability and communication efficiency.
+1.2
+Notations
+We adopt the notation that lower-case letters represent scalar variables, lower-case bold-face letters
+denote column vectors, and upper-case bold-face letters denote matrices. The d × d identity matrix is
+represented by Id. Depending on the context, ∥.∥denotes the l2 norm of a vector or the Frobenius
+norm of a matrix, ∥.∥op denotes the operator norm of a matrix, |.| denotes the absolute value of a
+scalar, ⊤denotes matrix or vector transpose. For a number N, [N] = {1, . . . , N}.
+2
+Preliminaries and Related Works
+2.1
+LoRA and Its Variants
+Low-Rank Adaptation (LoRA) [21] fine-tunes large language models efficiently by keeping the
+original weights fixed and adding small trainable matrices that apply low-rank updates. Specifically,
+for a pre-trained weight matrix W0 ∈Rd×d, the update is expressed as W = W0 + αAB, where
+A ∈Rd×r and B ∈Rr×d with r ≪d, and only A and B are trained. Many variants of LoRA
+have been developed to further improve efficiency and performance. In Zhang et al. [44], the
+authors propose a memory-efficient fine-tuning method, LoRA-FA, which keeps the projection-down
+weight fixed and updates the projection-up weight during fine-tuning. In Zhu et al. [46], the authors
+highlight the asymmetry between the projection-up and projection-down matrices and focus solely
+on comparing the effects of freezing either the projection-up or projection-down matrices. Hao et al.
+[16] introduce the idea of resampling the projection-down matrices, aligning with our observation
+that freezing projection-down matrices negatively impacts a model’s expressiveness. Furthermore,
+LoRA+ [17] explore the distinct roles of projection-up and projection-down matrices, enhancing
+performance by assigning different learning rates to each.
+2.2
+LoRA in Federated Setting
+In federated settings, LoRA is practical: clients fine-tune models efficiently with minimal resources,
+and only the small adapter matrices need to be communicated, sharply reducing transmission costs
+compared to full model finetuning. Zhang et al. consider FedAVG of LoRA, named FedIT[43].
+Zhang et al. [45] compare multiple PEFT methods in the federated setting, including Adapter[20],
+LoRA[21], Prompt tuning[26] and Bit-Fit[42]. SLoRA[1], which combines sparse finetuning and
+LoRA, is proposed to address the data heterogeneity in federated setting. As discussed before, Sun et
+al. [32] design a federated finetuning framework FFA-LoRA by freezing projection-down matrices
+for all the clients and only updating projection-up matrices. FlexLoRA[2] and FLoRA [40] consider
+clients with heterogeneous-rank LoRA adapters and proposes federated finetuning approaches. After
+we completed our work, we noticed a concurrent study, LoRA-A2 [23], which combines alternating
+optimization with adaptive rank selection for federated finetuning. While their focus is mainly
+empirical, the use of alternating optimization in their algorithm is similar to ours.
+2.3
+FedAVG of LoRA Introduces Interference
+Integrating LoRA within a federated setting presents challenges. In such a setup, each of the N clients
+is provided with the pretrained model weights W0, which remain fixed during finetuning. Clients are
+required only to send the updated matrices Bi and Ai to a central server for aggregation. While most
+current studies, such as FedIT[43], SLoRA [1] and FedPETuning [45], commonly apply FedAVG
+directly to these matrices as shown in (2), this approach might not be optimal. The precise update for
+each client’s model, ∆Wi, should be calculated as the product of the low-rank matrices Ai and Bi.
+Consequently, aggregation on the individual matrices leads to inaccurate model aggregation.
+1
+N
+N
+X
+i=1
+∆Wi = 1
+N (A1B1 + A2B2 + ... + ANBN)
+(1)
+̸= 1
+N (A1 + A2 + ... + AN) 1
+N (B1 + B2 + ... + BN)
+(2)
+There are a few options to avoid it.
+Updating B and A by matrix multiplication and truncated-SVD.
+One approach [40, 2] involves
+first computing the product of local matrices Bi and Ai to accurately recover ∆Wi. Then, the global
+B and A of next iteration are obtained by performing truncated SVD on the averaged set of ∆Wi.
+3
+
+
+=== Page 7 ===
+Heterogeneous Case.
+In Appendix A3.5, we analyze the convergence of RoLoRA with single
+LoRA structure in a federated setting with heterogeneous clients. By showing the decreasing of the
+angle distance between the ground truth a∗and the shared down-projection a, we demonstrate that
+RoLoRA allows the global model to converge to global minimum while the global loss of FFA-LoRA
+can be dominated by the term caused by the angle distance between the random initialization a0 and
+a∗.
+4.2
+Verifying Insights On a Non-Linear Model
+Figure 2: (Left) Comparison of three methods on
+a toy model with 5 clients. (Right) Comparison of
+three methods on a toy model with 10 clients.
+The previous analysis considers a linear model
+for each client. To assess the validity of the
+theorem in a non-linear model, we consider a
+two-layer neural network model on each client
+given by
+fi(xi) = ReLU(xiAB)Wout
+(10)
+where Wout ∈Rd×c, A ∈Rd×r and B ∈
+Rr×d are weights.
+We train the model on
+MNIST [11]. We consider two different ways
+to distribute training images to clients. The first
+is to distribute the images to 5 clients and each
+client gets access to training images of two specific labels, while the second is to distribute the images
+to 10 clients and each client only has training images of one specific label. There is no overlap in the
+training samples each client can access. Only weights matrices B and A are tunable, while Wout are
+fixed. We use c = 10, d = 784, r = 16 and make each client train 5 epochs locally with batch-size
+64 and aggregate clients’ update following three methods: FedAVG of LoRA, referred as LoRA;
+FFA-LoRA [32], which freezes A during training, and RoLoRA, which alternately updates B and A.
+As shown in Figure 2, we evaluate the performance of the model in each iteration on the test set. We
+observe that the accuracy of FFA-LoRA plateaus around 55% in both settings, which aligns with
+our theoretical analysis. The decline in LoRA’s performance with an increasing number of clients is
+most likely due to less accurate model aggregation, as demonstrated in (1) and (2). Notably, RoLoRA
+demonstrates greater robustness in these settings. To study the impact of non-linearity on RoLoRA,
+we repeat the two-layer experiment on a linear network without ReLU. As shown in Figure 7 in the
+Appendix, RoLoRA benefits more from the added expressiveness of ReLU.
+4.3
+Convergence in Smooth Non-Convex Settings
+We follow the approach of Li et al.[25] to analyze the convergence behavior of RoLoRA in smooth,
+non-convex settings, and derive TheoremA4.4 in Appendix. As shown in TheoremA4.4, RoLoRA
+achieves an O(1/
+√
+T) convergence rate toward a stationary point under smooth, non-convex condi-
+tions, matching the convergence rate established for FedAVG in the same regime.
+5
+Experiments on Language Models
+In this section, we evaluate the performance of RoLoRA in various federated settings. Considering
+all clients will participate in each round, we will explore the following methods: FedAVG of LoRA
+(referred as LoRA) [43], FFA-LoRA [32], FlexLoRA[2], FloRA[40], and RoLoRA (ours).
+Implementation & Configurations.
+We implement all the methods based on FederatedScope-LLM
+[24]. We use NVIDIA GeForce RTX 4090 or NVIDIA A40 for all the experiments. To make a fair
+comparison, for each dataset, we obtain the best performance on test set and report the average over
+multiple seeds. Specifically, the learning rate is chosen from the set {5e −4, 1e −3, 2e −3, 5e −
+3, 1e −2, 2e −2, 5e −2, 1e −1}. Other hyper-parameters for experiments are specified in Table 6
+in Appendix A5.2. Please note that in all tasks, we compare the performance of the three methods
+under the same number of communication rounds.
+5.1
+Language Understanding Tasks
+Model and Datasets.
+We take the pre-trained RoBERTa-Large (355M) [27] models from the
+HuggingFace Transformers library, and evaluate the performance of federated finetuning methods on
+5 datasets (SST-2, QNLI, MNLI, QQP, RTE) from the GLUE [38].
+7
+
+
+=== Page 8 ===
+Rank
+Clients Num
+Method
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+Avg.
+4
+3
+LoRA
+95.62±0.17
+91.59±0.21
+86.20±0.05
+86.13±0.10
+81.46±1.22
+88.20
+FFA-LoRA
+95.18±0.09
+91.35±0.32
+84.58±0.21
+85.50±0.25
+81.10±0.33
+87.48
+FlexLoRA
+94.91±0.18
+90.16±0.49
+85.16±0.69
+85.69±0.17
+79.3±1.05
+87.04
+RoLoRA
+95.49±0.16
+91.64±0.30
+85.70±0.04
+86.14±0.06
+82.43±0.84
+88.28
+4
+20
+LoRA
+94.3±0.27
+86.67±2.02
+78.55±7.31
+83.1±0.04
+51.87±3.24
+78.90
+FFA-LoRA
+93.88±0.06
+89.11±0.19
+80.99±1.74
+83.92±0.2
+57.16±1.46
+80.01
+FlexLoRA
+90.97±1.78
+54.36±0.36
+53.30±14.59
+69.18±10.39
+53.19±1.45
+64.20
+RoLoRA
+94.88±0.18
+90.35±0.37
+85.28±1.04
+85.83±0.1
+78.82±1.7
+87.03
+4
+50
+LoRA
+93.00±0.35
+78.13±5.13
+52.64±15.07
+77.60±1.47
+52.23±1.1
+70.72
+FFA-LoRA
+93.23±0.12
+85.05±0.34
+69.97±5.57
+78.44±0.41
+55.72±1.99
+76.48
+FlexLoRA
+54.08±5.5
+55.4±2.03
+39.14±2.35
+72.00±7.64
+52.71±0.00
+54.67
+RoLoRA
+94.80±0.17
+90.00±0.63
+82.98±3.36
+85.71±0.18
+75.57±2.88
+85.81
+8
+50
+LoRA
+93.00±0.23
+79.87±1.52
+56.96±2.02
+77.45±1.97
+53.79±6.57
+64.03
+FFA-LoRA
+92.74±0.13
+83.69±0.75
+64.51±1.92
+79.71±2.04
+53.07±1.3
+72.46
+FlexLoRA
+50.92±0.00
+56.92±1.04
+37.43±2.80
+66.40±4.74
+52.59±0.21
+52.85
+RoLoRA
+94.53±0.17
+90.1±0.45
+85.17±0.41
+85.25±0.13
+76.3±4.9
+86.27
+Table 1: Results for four methods with RoBERTa-Large models across varying client numbers (3, 20,
+50), maintaining a constant sample count during fine-tuning.
+Figure 3: Accuracies over rounds with RoBERTa-
+Large models on SST-2, QNLI, MNLI, and QQP.
+It involves 50 clients using rank 4.
+Effect of Number of Clients.
+In Table 1, we
+increased the number of clients from 3 to 20,
+and then to 50, ensuring that there is no overlap
+in the training samples each client can access.
+Consequently, each client receives a smaller frac-
+tion of the total dataset. The configurations are
+presented in Table 7 in Appendix. We observe
+that as the number of clients increases, while
+maintaining the same number of fine-tuning
+samples, the performance of the LoRA method
+significantly deteriorates for most datasets. In
+contrast, RoLoRA maintains its accuracy lev-
+els. The performance of FFA-LoRA also de-
+clines, attributed to the limited expressiveness
+of the random initialization of A for clients’ het-
+erogeneous data. FlexLoRA shows significant
+degradation especially under high client counts.
+Notably, RoLoRA achieves this accuracy while
+incurring only half the communication costs as-
+sociated with LoRA and FlexLoRA. A comparison when using rank-2 LoRA adapter is shown in
+Table 8 in Appendix.
+Furthermore, we have provided performance comparison of FLoRA and RoLoRA in the same settings
+in Table 11 in Appendix. RoLoRA consistently outperforms FLoRA across tasks and client counts.
+Additionally, Figure 3 illustrates the finetuning dynamics, highlighting that RoLoRA converges
+substantially faster than the other methods. An extended 100-round version is provided in Figure 8 in
+the Appendix, further demonstrating RoLoRA’s superior accuracy when all baselines have converged.
+Dir(0.5), #Clients = 10
+Dir(1.0), #Clients = 15
+MNLI
+QQP
+MNLI
+QQP
+LoRA
+81.19 ±0.23
+82.60 ±0.41
+74.54 ±1.19
+81.49 ±0.60
+FFA-LoRA
+75.60 ±0.21
+81.47 ±0.87
+74.83 ±0.59
+78.62 ±1.67
+FlexLoRA
+35.45 ±0.00
+63.24 ±0.09
+35.45 ±0.00
+66.56 ±4.48
+RoLoRA
+82.60 ±0.69
+84.16 ±0.65
+81.55 ±0.44
+84.26 ±0.26
+Table 2: Performance comparison of methods on MNLI and
+QQP under different dirichlet distributions and client settings.
+We report the average and std. over three seeds.
+Effect of Non-IID Data Distribu-
+tion.
+Table 2 presents a perfor-
+mance comparison of LoRA, FFA-
+LoRA, FlexLoRA, and RoLoRA on
+the MNLI and QQP tasks under two
+federated settings: Dirichlet(0.5) with
+10 clients and Dirichlet(1.0) with 15
+clients.
+Here, the Dirichlet(α) pa-
+rameter controls how non-iid the data
+is across clients: a smaller α pro-
+duces highly skewed and heteroge-
+neous client data distributions, while
+a larger α yields more balanced, moderately non-iid splits. Across both tasks and settings, RoLoRA
+8
+
+
+=== Page 9 ===
+Figure 4: Results with RoBERTa-Large models on GLUE under different fine-tuning parameter
+budgets, involving three clients with rank 4.
+consistently achieves the highest performance. The configurations are presented in Table 7 in
+Appendix.
+Effect of Number of Finetuning Parameters.
+In Figure 4, we compare three methods across five
+GLUE datasets. We apply LoRA module to every weight matrix of the selected layers, given different
+budgets of LoRA parameters. For each dataset, we experiment with three budgets (P1, P2, P3)
+ranging from low to high. The corresponding layer sets that are attached with LoRA adapters,
+P1, P2, P3, are detailed in Table 12 in Appendix A5.2. The figures indicates that with sufficient
+number of finetuning parameters, FFA-LoRA can achieve comparable best accuracy as LoRA
+and RoLoRA, aligning with the results in [32]; as the number of LoRA parameters is reduced,
+the performance of the three methods deteriorates to varying degrees. However, RoLoRA, which
+achieves performance comparable to LoRA, demonstrates greater robustness compared to FFA-LoRA,
+especially under conditions of limited fine-tuning parameters. It is important to note that with the
+same finetuning parameters, the communication cost of RoLoRA and FFA-LoRA is always half of
+that of LoRA due to their parameter freezing nature. This implies that RoLoRA not only sustains its
+performance but also enhances communication efficiency. Additional results of varying ranks are
+provided in Figure 9, 10, and 11 in Appendix A5.4.
+BoolQ
+PIQA
+SIQA
+HellaSwag
+LoRA
+61.42±0.29
+33.19±9.8
+31.88±3.95
+21.23±2.82
+FFA-LoRA
+53.43±4.3
+35.49±9.55
+10.63±8.44
+11.81±4.53
+RoLoRA
+61.83±0.22
+61.26±3.3
+39.76±0.41
+27.49±2.34
+WinoGrande
+ARC-e
+ARC-c
+OBQA
+LoRA
+31.36±5.02
+27.36±0.89
+32.03±1.14
+26.07±2.32
+FFA-LoRA
+1.61±2.14
+6.88±0.42
+7.93±0.89
+15.0±5.41
+RoLoRA
+47.67±0.75
+33.19±1.29
+40.13±1.73
+31.67±1.4
+Table 3: Results with Llama-2-7B models on common-
+sense reasoning tasks. This involves 50 clients using rank
+8.
+Figure 5: Ablation study on learning
+vs. freezing A on MNLI task.
+5.2
+Commonsense Reasoning Tasks
+Results.
+We evaluate RoLoRA against FFA-LoRA and LoRA on Llama-2-7B[35] for commonsense
+reasoning tasks. In Table 3, we compare the results of three methods with Llama-2-7B models
+on 8 commonsense reasoning tasks. The configurations are presented in Appendix A5.7. The
+performance is reported as the mean accuracy with standard deviations across 3 trials. RoLoRA
+consistently achieves the highest accuracy across all tasks, demonstrating significant improvements
+over both LoRA and FFA-LoRA. We also highlights that FFA-LoRA exhibits large performance
+variances across trials, such as a standard deviation of 9.55 for PIQA and 8.44 for SIQA, respectively.
+This significant variability is likely due to the initialization quality of parameter A, as different
+initializations could lead to varying optimization trajectories and final performance outcomes as
+discussed in Section 4. Additional results on this task are presented in Table 16 in Appendix A5.7.
+9
+
+
+=== Page 10 ===
+5.3
+Ablation Study
+Learning vs. Freezing A
+we conducted an experiment comparing performance of FFA-LoRA,
+RoLoRA, and different mixing strategies under the setting with 50 clients. In these strategies, for
+example, 20%RoLoRA+80%FFA-LoRA means we finetune with RoLoRA (where A is learned) for
+the first 20% of communication rounds, followed by FFA-LoRA (where A is frozen) for the remaining
+80%. The results are shown in the Figure 5. We observe that finetuning with RoLoRA generally leads
+to faster convergence and higher final accuracy. This highlights the benefits of learning A, especially
+in early training.
+Figure 6: Asymmetry vs. Symmetry in
+LoRA updates. Accuracy vs. round.
+Symmetry vs. Asymmetry Update
+In standard LoRA
+implementations, LoRA-A is randomly initialized while
+LoRA-B is set to zero, which implicitly assigns asymmet-
+ric roles. In our study, we view LoRA-A as a learnable
+basis and LoRA-B as coefficients on that basis. Motivated
+by this, we investigated whether an asymmetric update
+policy might be preferred. We systematically compare
+four strategies: (i) the symmetric alternation used in stan-
+dard RoLoRA, (ii) B-prioritized multi-step updates (B,
+B, B, A, . . . ), (iii) A-prioritized multi-step updates (B,
+A, A, A, . . . ), and (iv) unequal learning rates (e.g., set-
+ting lrB = 2lrA or lrB = 4lrA). As shown in Figure 6,
+balanced AB alternation yields the highest accuracy and
+the most stable trajectory, while aggressively prioritizing
+either A or B degrades performance.
+Effect of Local Steps on RoLoRA and FFA-LoRA
+To evaluate the effect of local steps, we have
+conducted an ablation study on the number of local steps in a 50-client setting with rank-4 adapters,
+as shown in Table 4. For a fair comparison, we kept the total computational budget (#Local Steps ×
+#Total Rounds) constant across all settings. FFA-LoRA’s performance consistently degrades on both
+datasets as the number of local steps increases. This indicates that with more local work per round,
+FFA-LoRA suffers severely from client drift, where local models overfit to their own data. RoLoRA
+maintains high performance across all settings.
+(Local Steps, Total Rounds)
+(1,600)
+(5,120)
+(10,60)
+(20,30)
+MNLI
+FFA-LoRA
+72.52 ±0.68
+71.73 ±1.17
+69.64 ±4.31
+69.97 ±5.57
+RoLoRA
+84.39 ±0.34
+84.96 ±0.18
+84.79 ±0.23
+82.98 ±3.36
+QQP
+FFA-LoRA
+80.51 ±1.38
+80.2 ±1.65
+79.07 ±1.21
+78.44 ±0.41
+RoLoRA
+85.24 ±0.56
+85.44 ±0.8
+84.77 ±0.77
+85.71 ±0.18
+Table 4: Results on RoBERTa-Large on MNLI and QQP with different local steps while keeping total
+computational budget constant.
+5.4
+More Results
+We provide additional experimental results in the Appendix, including: (1) evaluations of Llama-2-7B
+on HumanEval and MMLU tasks (Appendix A5.8); (2) comparisons of communication and time
+costs in Table 19; and (3) evaluations under a fixed communication budget in Figure 12.
+6
+Conclusion
+In this work, we introduced RoLoRA, a federated finetuning framework based on alternating opti-
+mization for LoRA adapters. Our approach addresses key limitations of prior methods by jointly
+learning both the down-projection and up-projection matrices, thereby enhancing the expressiveness
+and robustness of the adapted models. Through a combination of theoretical analysis on linear models
+and validation on nonlinear models, we established the importance of optimizing both components
+in LoRA. Extensive experimental evaluations across various language models tasks, and diverse
+federated learning settings confirmed that RoLoRA consistently outperforms existing baselines,
+particularly in large-scale scenarios under constrained communication and resource conditions.
+10
+
+
+=== Page 15 ===
+Appendix
+A1 Algorithms
+16
+A2 Discussion
+16
+A3 Theoretical Analysis on Linear Model
+17
+A3.1 Notation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+17
+A3.2 Auxiliary
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+18
+A3.3 Homogeneous Case . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+19
+A3.4 Proof of Theorem 5.4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+25
+A3.5 Heterogeneous Case . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+31
+A4 Convergence Analysis of Non-Convex Case
+36
+A5 Experiments
+41
+A5.1 Impact of Non-Linearity on RoLoRA
+. . . . . . . . . . . . . . . . . . . . . . . .
+41
+A5.2 Hyper-parameters for GLUE task . . . . . . . . . . . . . . . . . . . . . . . . . . .
+41
+A5.3 Effect of Number of Clients . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+41
+A5.4 Effect of Number of LoRA Parameters . . . . . . . . . . . . . . . . . . . . . . . .
+42
+A5.5 Effect of Rank on RoLoRA and FFA-LoRA in the Centralized Setting . . . . . . .
+43
+A5.6 Align the Communication Cost . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+44
+A5.7 Commonsense Reasoning Tasks
+. . . . . . . . . . . . . . . . . . . . . . . . . . .
+44
+A5.8 Language Generation Tasks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+45
+A5.9 Communication and Time Cost Comparison . . . . . . . . . . . . . . . . . . . . .
+45
+A5.10
+Privacy-preserving FL . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+45
+15
+
+
+=== Page 36 ===
+A4
+Convergence Analysis of Non-Convex Case
+We follow the approach of Li et al. [25] to demonstrate the convergence of RoLoRA (Algorithm 1) in
+smooth, non-convex landscapes. Assumptions A4.1 and A4.2 are standard and commonly employed in
+the convergence analysis of federated learning. Assumption A4.3 is adapted from FedSA-LoRA [15],
+which proposes a personalized federated fine-tuning framework that maintains local diversity in B
+while aggregating only A through simultaneous updates of both A and B. In contrast, our work
+focuses on a single global model with alternating optimization of A and B.
+In Assumption A4.3, bounding Frobenius norms of A and B is a standard weight-regularity require-
+ment in LoRA fine-tuning practice, where small rank and scaling factors keep the adapters from
+exploding. The inner-product conditions simply posit that each adapter has enough non-degenerate
+singular values, requiring that the low-rank updates retain sufficient rank and alignment with local
+gradient directions. Formally, we require the smallest singular values of At
+i and Bt
+i to be lower
+bounded by √cA and √cB.
+Assumption A4.1 (Bounded Stochastic Gradient). Let a mini-batch xi, be drawn uniformly at
+random from client i’s dataset, meaning Exi[∇Wi li
+ Wi, xi
+
+] = ∇Wi li
+ Wi
+
+. We assume that the
+expected squared norm of any stochastic gradient is uniformly bounded, that is,
+Exi
+∇W li
+ W, xi
+2 ≤G2
+where the expectation is over the random draw of the mini-batch xi, and G > 0 is a constant.
+Assumption A4.2 (Lipschitz smooth). Loss functions l1, · · · , lN are all L-smooth. For all weights
+W and U:
+li(V) ≤li(W) + ⟨∇Wli(W), V −W⟩F + L
+2 ∥V −W∥2
+F , ∀i ∈[N]
+Assumption A4.3. Let Wi = W0 + BiAi represent the model parameters for the i-th client. There
+exist constants CB > 0, CA > 0, cB > 0, and cA > 0 such that:
+∥Bi∥F ≤CB,
+∥Ai∥F ≤CA,
+⟨AiAi
+⊤, ∇Wli(Wi)∇Wli(Wi)⊤⟩F ≥cA∥∇Wli(Wi)∥2
+F ,
+⟨Bi
+⊤Bi, ∇Wli(Wi)⊤∇Wli(Wi)⟩F ≥cB∥∇Wli(Wi)∥2
+F ,
+for all i ∈[N].
+Theorem A4.4 (Convergence to the stationary point). Let Assumption A4.1, A4.2, and A4.3
+hold. Suppose each client runs 2T rounds, each consisting of Q local epochs, using a learning rate
+η ∝O(1/
+√
+T), then we obtain:
+min
+0≤t≤2T E[∥∇Wli(Wt)∥2
+F ] ≤
+∆i
+2Tηcmin
++
+Dη
+2cmin
+(255)
+where ∆i = E[li(W0)] −l∗
+i , cmin = min(cA, cB), D is chosen such that Dη2 ≥DA + DB,
+and DA = LηC2
+AQ2G2 + 1
+2ηG2 + 2Lη2C2
+AQ2G2 + L
+2 η2C4
+AG2, DB = LηC2
+BQ2G2 + 1
+2ηG2 +
+2Lη2C2
+BQ2G2 + L
+2 η2C4
+BG2.
+According to Theorem A4.4, we achieve an O
+
+1
+√
+T
+
+convergence rate toward a stationary point
+under smooth, non-convex conditions, matching the convergence rate of FedAVG in the same setting.
+We follow a similar derivation framework to [15], adopting similar proof techniques, such as applying
+Assumption A4.2 to the global and local models (Eq.(263) and Eq.(277)). However, due to structural
+differences between our algorithm and that of [15]—in particular, our use of alternating optimization
+rather than simultaneous updates—the derivation diverges in how key gradient bounds are applied
+and combined. As a result, even though the proof steps are analogous, our final convergence bound
+depends on min(cA, cB) and features decoupled A- and B-related terms, in contrast to the cA + cB
+dependence along with cross-terms due to the simultaneous updates of A and B in [15]. Although
+FedSA-LoRA reports the same O
+
+1
+√
+T
+
+convergence rate, the two algorithms address fundamentally
+different FL scenarios: FedSA-LoRA optimizes personalized client models, whereas RoLoRA learns
+a single shared global model.
+36
+
+
+=== Page 37 ===
+Proof. Let W2t = W0 + AtBt be the global model parameters at the 2t-th communication round.
+Let W2t
+i,q = W0 + AtBt
+i,q be the local model parameters of client i at the q-th local epoch of the
+2t-th communication round, where each client performs a total of Q local epochs. We define the
+following for convenience:
+The 2t-th communication round:
+W2t = W0 + AtBt
+(256)
+The q-th local epoch of the 2t-th communication round:
+W2t
+i,q = W0 + AtBt
+i,q
+(257)
+The 2t + 1-th communication round:
+W2t+1 = W0 + AtBt+1 = W0 + 1
+N
+N
+X
+i=1
+AtBt
+i,Q
+(258)
+The q-th local epoch of the 2t + 1-th communication round:
+W2t+1
+i,q
+= W0 + At
+i,qBt+1
+(259)
+The 2t + 2-th communication round:
+W2t+2 = W0 + At+1Bt+1 = W0 + 1
+N
+N
+X
+i=1
+At
+i,QBt+1
+(260)
+According to chain rule,
+∇Bli(W) = A⊤∇Wli(W)
+(261)
+∇Ali(W) = ∇Wli(W)B⊤
+(262)
+Now we apply Assumption A4.2 to local update of B, and get
+li(W2t
+i,1) ≤li(W2t) + ⟨W2t
+i,1 −W2t, ∇Wli(W2t)⟩F + L
+2 ∥W2t
+i,1 −W2t∥2
+F
+(263)
+By (256) and (257),
+W2t
+i,1 −W2t = At(Bt
+i,1 −Bt)
+(264)
+= −ηAtAt⊤∇Wli(W2t, x2t
+i,1)
+(265)
+where η is the learning rate. Then
+li(W2t
+i,1) ≤li(W2t) −η⟨AtAt⊤∇Wli(W2t, x2t
+i,1), ∇Wli(W2t)⟩F
++L
+2 η2∥AtAt⊤∇Wli(W2t, x2t
+i,1)∥2
+F
+(266)
+Taking expectation of (266),
+E[li(W2t
+i,1)] ≤E[li(W2t)] −η⟨AtAt⊤∇Wli(W2t), ∇Wli(W2t)⟩F + L
+2 η2E[∥AtAt⊤∇Wli(W2t, x2t
+i,1)∥2
+F ]
+(267)
+The inner product term is lower bounded such that
+⟨AtAt⊤∇Wli(W2t), ∇Wli(W2t)⟩F = Tr[∇Wli(W2t)
+⊤AtAt⊤∇Wli(W2t)]
+(268)
+= Tr[AtAt⊤∇Wli(W2t)∇Wli(W2t)
+⊤]
+(269)
+= ⟨AtAt⊤, ∇Wli(W2t)∇Wli(W2t)
+⊤⟩F
+(270)
+≥cA∥∇Wli(W2t)∥2
+F
+(271)
+37
+
+
+=== Page 41 ===
+A5
+Experiments
+A5.1
+Impact of Non-Linearity on RoLoRA
+Across both linear and non-linear settings, all methods perform similarly, with RoLoRA showing mod-
+est improvement in the non-linear case, likely due to its better utilization of the added expressiveness
+from ReLU.
+Figure 7: Comparison of RoLoRA, LoRA, and FFA-LoRA on linear and non-linear networks. While
+overall performance is similar, RoLoRA shows modest gains in the non-linear setting, likely benefiting
+from ReLU’s added expressiveness.
+A5.2
+Hyper-parameters for GLUE task
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+Total comm. rounds
+500
+500
+500
+500
+200
+Batch Size
+64
+32
+32
+32
+32
+Local Epochs
+20
+20
+20
+20
+20
+Table 6: Hyper-parameters configurations. Note the total communication rounds are for the setting
+with 3 clients. When increasing the number of clients, we decrease the total communication rounds
+accordingly to maintain a constant sample count used during fine-tuning
+We show the hyper-parameter configurations for each dataset in Table 6.
+A5.3
+Effect of Number of Clients
+Configurations
+Table 7 shows the selected layer set attached with LoRA modules for Table 1. We
+present Table 1 with the results of FlexLoRA [2] added in Table 1.
+Layer Attributes
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+P2
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{18, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{16, . . . , 23}
+Table 7: The selected layer set attached with LoRA modules for Table 1 and Table 2
+Rank-2 Results
+We show the effect of number of clients when using rank-2 LoRA modules in
+Table 8.
+Rank-32 Results
+In Table 9, we provide additional experiments with rank-32 LoRA adapters in the
+20-client and 50-client setting.
+41
+
+
+=== Page 42 ===
+Client num
+Methods
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+LoRA
+95.64
+92.04
+85.85
+86.16
+82.19
+3
+FFA-LoRA
+94.91
+90.11
+84.06
+85.48
+80.86
+RoloRA
+95.60
+91.62
+85.66
+86.16
+82.19
+LoRA
+94.27
+86.91
+81.22
+82.07
+46.21
+20
+FFA-LoRA
+93.92
+89.58
+80.51
+82.62
+57.76
+RoloRA
+94.84
+90.77
+85.13
+85.10
+81.23
+LoRA
+93.23
+82.57
+58.96
+76.96
+49.10
+50
+FFA-LoRA
+92.32
+85.15
+62.79
+77.78
+53.07
+RoloRA
+94.61
+89.83
+85.15
+85.55
+72.92
+Table 8: Results with RoBERTa-Large models with varying client numbers (3, 20, 50) using rank-2
+LoRA modules in federated setting, maintaining a constant sample count during fine-tuning.
+Client num
+Methods
+MNLI
+QQP
+LoRA
+79.72 ±0.38
+83.66 ±0.02
+20
+FFA-LoRA
+80 ±0.47
+84.08 ±0.31
+RoLoRA
+85.91 ±0.63
+86.37 ±0.09
+LoRA
+70.84 ±4.63
+79.75 ±0.31
+50
+FFA-LoRA
+74.47 ±1.57
+80.65 ±0.31
+RoLoRA
+85.46 ±0.08
+86.15 ±0.26
+Table 9: Results with RoBERTa-Large models in 20-client and 50-client setting using rank-32 LoRA
+adapters.
+10-Client Setting
+In Table 10, we provide results for 10-client setting with rank-4 adapter. The
+results show that RoLoRA still outperform other methods. In the 10-client setting, RoLoRA’s
+performance gain over other methods falls between the gains observed in the 3-client and 20-client
+settings.
+MNLI
+QQP
+QNLI
+LoRA
+81.48 ±2.19
+84.1 ±0.14
+87.73 ±0.67
+FFA-LoRA
+83.19 ±0.64
+84.35 ±0.06
+89.88 ±0.13
+RoLoRA
+84.95 ±0.8
+95.25±0.39
+90.3 ±0.76
+Table 10: Results with RoBERTa-Large model with 10 clients using rank-4 LoRA adapters, running
+for 150 rounds in total.
+FLoRA vs. RoLoRA
+Table 11 shows a comparison between FLoRA and RoLoRA. In the 3-client
+setting, we ran 500 rounds and scaled rounds down proportionally with more clients to keep the
+total sample budget fixed. RoLoRA consistently outperforms FLoRA across tasks and client counts.
+While FLoRA eventually converges (e.g., 83.3% on MNLI after 4000 rounds), it does so much more
+slowly, highlighting RoLoRA’s faster convergence and better scalability.
+Finetuning Dynamics within 100 Rounds
+Figure 8 presents the 100-round extension of Figure 3,
+where RoLoRA consistently converges faster and achieves the highest accuracy.
+We want to clarify that Figure 3 focuses on comparing convergence under a fixed sample budget
+rather than full convergence, and Table 1 shows that this budget suffices for all methods when using 3
+clients. However, as shown in Figure 3, with 50 clients, only RoLoRA fully converges, underscoring
+its efficiency in low-resource settings.
+A5.4
+Effect of Number of LoRA Parameters
+In Table 12, we include the details about layers attached with LoRA adapters for different budget of
+finetuning parameters, for each dataset.
+42
+
+
+=== Page 43 ===
+Client num
+Method
+MNLI
+QQP
+QNLI
+3
+FLoRA
+39.29
+51.05
+59.88
+RoLoRA
+85.70
+86.14
+91.64
+20
+FLoRA
+32.01
+51.58
+49.89
+RoLoRA
+85.28
+85.83
+90.35
+50
+FLoRA
+31.97
+50.54
+38.82
+RoLoRA
+82.98
+85.71
+90.00
+Table 11: Results with RoBERTa-Large models with rank-4 LoRA adapter for varying numbers
+of clients (3, 20, 50), comparing FLoRA with RoLoRA, maintaining a constant sample count
+during finetuning. In the 3-client setting, while FLoRA eventually converges (e.g., 83.3% on MNLI
+after 4000 rounds), the figure shows results for only 500 rounds, within which FLoRA has not yet
+converged. This highlights RoLoRA’s faster convergence and better scalability.
+Figure 8: Accuracies over 100 rounds. It involves 50 clients using rank 4.
+Layer Attributes
+SST-2
+QNLI
+MNLI
+QQP
+RTE
+P1
+Type
+Wv
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{21, . . . , 23}
+{21, . . . , 23}
+{21, . . . , 23}
+{21, . . . , 23}
+{21, . . . , 23}
+P2
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{18, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{15, . . . , 23}
+{16, . . . , 23}
+P3
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{0, . . . , 23}
+{12, . . . , 23}
+{12, . . . , 23}
+{12, . . . , 23}
+{12, . . . , 23}
+Table 12: The selected layer set attached with LoRA for the setup of Figure 4
+Figure 9: Results with RoBERTa-Large models on GLUE of different budget of finetuning parameters.
+It involves 3 clients using rank 8.
+A5.5
+Effect of Rank on RoLoRA and FFA-LoRA in the Centralized Setting
+We evaluated FFA-LoRA and RoLoRA on MNLI and QQP using 8 LoRA adapters attached to query
+and value projection of last 4 layers, and trained for 50000 iterations to ensure full convergence.
+Increasing ranks can narrow the performance gap between the two schemes. Another related technique
+to narrow the performance gap between the two schemes is by increasing the number of adapters, as
+discussed in Section 5.1 (“Effect of Number of Fine-Tuning Parameters”). With sufficient adapters,
+43
+
+
+=== Page 44 ===
+Figure 10: Results with RoBERTa-Large models on GLUE of different budget of finetuning parame-
+ters. It involves 3 clients using rank 2.
+Figure 11: Results with RoBERTa-Large models on GLUE of different budget of finetuning parame-
+ters. It involves 3 clients using rank 1.
+FFA-LoRA can achieve comparable peak accuracy to RoLoRA. However, in federated settings where
+resources are constraiend, RoLoRA is more advantageous.
+rank-1
+rank-2
+rank-32
+rank-64
+FFA-LoRA
+80.66
+81.51
+83.3
+83.32
+MNLI
+RoLoRA
+83.93
+84.59
+85.78
+85.79
+Diff
+3.27
++3.08
++2.51
++2.47
+FFA-LoRA
+69.61
+74.01
+75.53
+75.51
+QQP
+RoLoRA
+77.26
+77.41
+78.03
+78.05
+Diff
++7.65
++3.40
++2.5
++2.54
+Table 13: Evaluation on FFA-LoRA and RoLoRA in the centralized setting using only 8 LoRA
+adapters. Increasing ranks can narrow the performance gap between the two schemes.
+A5.6
+Align the Communication Cost
+In Figure 12, we conduct a comparison of three methods under the constraint of identical communi-
+cation costs under the assumption that the number of clients is small. To align the communication
+costs across these methods, two approaches are considered. The first approach involves doubling the
+rank of FFA-LoRA and RoLoRA, with results presented in Appendix A5.4. The second approach
+requires doubling the number of layers equipped with LoRA modules. In Figure 12, the latter strategy
+is employed. Specifically, for both FFA-LoRA and RoLoRA, we adjust the communication costs
+by doubling the number of layers equipped with LoRA modules, thereby standardizing the size of
+the transmitted messages. The configurations are presented in Table 14. Figure 12 demonstrates
+that when operating within a constrained communication cost budget, the performance of RoLoRA
+surpasses that of the other two methods for most of the tasks.
+In Table 14, we include the details about layers attached with LoRA adapters.
+A5.7
+Commonsense Reasoning Tasks
+We present the configurations for Table 3 in Table 15. We show the results under the same setup but
+using rank-2 LoRA modules in Table 16.
+44
+
+
+=== Page 45 ===
+Figure 12: RoBERTa-Large accuracies on QQP, MNLI, QNLI, and RTE with specific uplink commu-
+nication budget. It involves 3 clients using rank 4. Error bars reflect standard deviations.
+Communication Cost
+LoRA
+FFA-LoRA
+RoLoRA
+187.5 KB
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{21, . . . , 23}
+{18, . . . , 23}
+{18, . . . , 23}
+250 KB
+Type
+Wv, Wq
+Wv, Wq
+Wv, Wq
+Index
+{20, . . . , 23}
+{16, . . . , 23}
+{16, . . . , 23}
+Table 14: The selected layer set attached with LoRA modules for the setup of Figure 12
+A5.8
+Language Generation Tasks
+Model, Datasets and Metrics.
+We evaluate the performance of three federated finetuning methods
+with the model Llama-2-7B [35], on two datasets: CodeAlpaca [4] for coding tasks, and Alpaca
+[33] for general instruction-following tasks. Using HumanEval [5] as the metric for CodeAlpaca,
+we assess the model’s ability to generate accurate code solutions. For Alpaca, we employ MMLU
+(Massive Multitask Language Understanding) [18] to evaluate the model’s performance across diverse
+domains. This provides an assessment of Llama-2-7B’s coding proficiency, and general language
+capabilities when finetuning in the federated setting. We show the setup in Table 17.
+Results
+Table 18 presents the evaluation results of the Llama-2-7B model using three methods,
+across two tasks: HumanEval, and MMLU. The metrics reported include the average and standard
+deviation of performance over five seeds, with 50 clients involved. The results show that RoLoRA
+achieves the highest scores across most metrics, demonstrating slightly improved performance
+compared to LoRA and FFA-LoRA. The improvements are more evident in certain subcategories of
+the MMLU dataset.
+A5.9
+Communication and Time Cost Comparison
+Table 19 compares the communication cost and time cost in a 50-client setting on MNLI task.
+RoLoRA and FFA-LoRA have the lowest communication and time costs.
+A5.10
+Privacy-preserving FL
+Beyond robustness, practical FL often requires privacy-preserving mechanisms, most notably cryp-
+tographic approaches such as secure aggregation [3] or homomorphic encryption [19, 8, 7], and
+statistical protections like differential privacy (DP) [14, 41]. While RoLoRA was not explicitly de-
+signed with privacy mechanisms such as differential privacy, we recognize that its ability to mitigate
+inexactness through alternating optimization and aggregation may help mitigate a key challenge
+for DP-aware federated learning, where inexact model updates can be particularly problematic. In
+Table 20, we itegrated NbAFL [41] with ϵ = 10 and δ = 1e −6 in a 3-client setting. RoLoRA
+outperform others across two tasks.
+45
+
+

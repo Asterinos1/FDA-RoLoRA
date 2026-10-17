@@ -549,7 +549,10 @@ def fda_rolora_dual_track_opt(hyperparams: Dict[str, Any]):
 
     if hyperparams.get('ds_name') == 'mnist':
         from fdaopt.models.toy_model import ToyModel
-        model = ToyModel(rank=hyperparams.get('lora_r', 8)).to(utils.DEVICE)
+        model = ToyModel(
+            rank=hyperparams.get('lora_r', 8),
+            linear=hyperparams.get('linear', False)
+        ).to(utils.DEVICE)
     else:
         base_model = AutoModelForSequenceClassification.from_pretrained(
             hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
@@ -714,7 +717,10 @@ def fda_rolora_dual_track_ema_standard_opt(hyperparams: Dict[str, Any]):
 
     if hyperparams.get('ds_name') == 'mnist':
         from fdaopt.models.toy_model import ToyModel
-        model = ToyModel(rank=hyperparams.get('lora_r', 8)).to(utils.DEVICE)
+        model = ToyModel(
+            rank=hyperparams.get('lora_r', 8),
+            linear=hyperparams.get('linear', False)
+        ).to(utils.DEVICE)
     else:
         base_model = AutoModelForSequenceClassification.from_pretrained(
             hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
@@ -881,7 +887,10 @@ def fda_rolora_dual_track_ema_pure_opt(hyperparams: Dict[str, Any]):
 
     if hyperparams.get('ds_name') == 'mnist':
         from fdaopt.models.toy_model import ToyModel
-        model = ToyModel(rank=hyperparams.get('lora_r', 8)).to(utils.DEVICE)
+        model = ToyModel(
+            rank=hyperparams.get('lora_r', 8),
+            linear=hyperparams.get('linear', False)
+        ).to(utils.DEVICE)
     else:
         base_model = AutoModelForSequenceClassification.from_pretrained(
             hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
@@ -1044,7 +1053,10 @@ def fda_rolora_dual_track_sma_opt(hyperparams: Dict[str, Any]):
 
     if hyperparams.get('ds_name') == 'mnist':
         from fdaopt.models.toy_model import ToyModel
-        model = ToyModel(rank=hyperparams.get('lora_r', 8)).to(utils.DEVICE)
+        model = ToyModel(
+            rank=hyperparams.get('lora_r', 8),
+            linear=hyperparams.get('linear', False)
+        ).to(utils.DEVICE)
     else:
         base_model = AutoModelForSequenceClassification.from_pretrained(
             hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
