@@ -1,0 +1,41 @@
+[18:35:33] Starting THESIS-RBASE-PURE-DS-qqp-C50-R30-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO0.5-NODISC-BSTART-NOGUARD-S42-ES0.72-MR6-P3-D0.005-W3 (FDA-RoLoRA-DualTrack-Pure) on cuda:0...
+[18:40:13] Round 1/30 finished (Matrix B, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=1 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6669 train_accuracy=0.6188 round_epochs=1.0000
+[18:44:41] Round 2/30 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=2 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6668 train_accuracy=0.6192 round_epochs=1.0000
+[18:59:49] Round 3/30 finished (Matrix B, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=3 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6633 train_accuracy=0.6255 round_epochs=5.0000
+[19:04:17] Round 4/30 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=4 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6606 train_accuracy=0.6268 round_epochs=1.0000
+[19:19:41] Round 5/30 finished (Matrix B, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=5 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6573 train_accuracy=0.6276 round_epochs=5.0000
+[19:57:46] Round 6/30 finished (Matrix A, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=6 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6538 train_accuracy=0.6276 round_epochs=11.0000
+[20:16:40] Round 7/30 finished (Matrix B, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=7 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6496 train_accuracy=0.6276 round_epochs=5.0000
+[20:38:34] Round 8/30 finished (Matrix A, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=8 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6431 train_accuracy=0.6275 round_epochs=6.0000
+[20:49:48] Round 9/30 finished (Matrix B, Epochs: 3, Ratio: 0.5, Pure NODISC).
+[METRIC] round=9 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6180 train_accuracy=0.6276 round_epochs=3.0000
+[21:07:56] Round 10/30 finished (Matrix A, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=10 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.5811 train_accuracy=0.6342 round_epochs=6.0000
+[21:12:30] Round 11/30 finished (Matrix B, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=11 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.6418 train_accuracy=0.6178 round_epochs=1.0000
+[21:52:19] Round 12/30 finished (Matrix A, Epochs: 14, Ratio: 0.5, Pure NODISC).
+[METRIC] round=12 test_accuracy=0.6353 test_f1=0.0000 test_loss=0.5949 train_accuracy=0.6382 round_epochs=14.0000
+[22:48:21] Round 13/30 finished (Matrix B, Epochs: 20, Ratio: 0.5, Pure NODISC).
+[METRIC] round=13 test_accuracy=0.7290 test_f1=0.6755 test_loss=0.5297 train_accuracy=0.6640 round_epochs=20.0000
+[22:52:54] Round 14/30 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=14 test_accuracy=0.7320 test_f1=0.6796 test_loss=0.5252 train_accuracy=0.7282 round_epochs=1.0000
+[23:13:42] Round 15/30 finished (Matrix B, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=15 test_accuracy=0.7332 test_f1=0.6859 test_loss=0.5170 train_accuracy=0.6968 round_epochs=7.0000
+[23:42:41] Round 16/30 finished (Matrix A, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=16 test_accuracy=0.7413 test_f1=0.6967 test_loss=0.5026 train_accuracy=0.7404 round_epochs=10.0000
+[00:11:37] Round 17/30 finished (Matrix B, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=17 test_accuracy=0.7246 test_f1=0.6839 test_loss=0.5241 train_accuracy=0.6852 round_epochs=10.0000
+[00:40:35] Round 18/30 finished (Matrix A, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=18 test_accuracy=0.7392 test_f1=0.6940 test_loss=0.5085 train_accuracy=0.7388 round_epochs=10.0000
+[01:09:31] Round 19/30 finished (Matrix B, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=19 test_accuracy=0.7222 test_f1=0.6866 test_loss=0.5241 train_accuracy=0.6948 round_epochs=10.0000
+[01:09:31] Early stopping triggered at round 19.
+[01:09:31] Execution finished for THESIS-RBASE-PURE-DS-qqp-C50-R30-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO0.5-NODISC-BSTART-NOGUARD-S42-ES0.72-MR6-P3-D0.005-W3.

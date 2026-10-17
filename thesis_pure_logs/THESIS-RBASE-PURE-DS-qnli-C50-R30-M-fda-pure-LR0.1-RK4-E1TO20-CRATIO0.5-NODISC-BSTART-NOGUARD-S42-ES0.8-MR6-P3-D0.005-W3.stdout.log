@@ -1,0 +1,53 @@
+[22:45:38] Starting THESIS-RBASE-PURE-DS-qnli-C50-R30-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO0.5-NODISC-BSTART-NOGUARD-S42-ES0.8-MR6-P3-D0.005-W3 on cuda:1...
+[22:50:22] Round 1/30 finished (Matrix B, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=1 test_accuracy=0.4946 test_loss=0.7015 train_accuracy=0.4987 round_epochs=1.0000
+[22:55:00] Round 2/30 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=2 test_accuracy=0.4946 test_loss=0.7013 train_accuracy=0.4944 round_epochs=1.0000
+[23:15:36] Round 3/30 finished (Matrix B, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=3 test_accuracy=0.4946 test_loss=0.6974 train_accuracy=0.4977 round_epochs=5.0000
+[23:20:13] Round 4/30 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=4 test_accuracy=0.4946 test_loss=0.6946 train_accuracy=0.4972 round_epochs=1.0000
+[23:44:51] Round 5/30 finished (Matrix B, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=5 test_accuracy=0.4942 test_loss=0.6932 train_accuracy=0.5002 round_epochs=6.0000
+[00:41:43] Round 6/30 finished (Matrix A, Epochs: 14, Ratio: 0.5, Pure NODISC).
+[METRIC] round=6 test_accuracy=0.5299 test_loss=0.6925 train_accuracy=0.5016 round_epochs=14.0000
+[01:26:22] Round 7/30 finished (Matrix B, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=7 test_accuracy=0.5389 test_loss=0.6924 train_accuracy=0.5060 round_epochs=11.0000
+[02:15:09] Round 8/30 finished (Matrix A, Epochs: 12, Ratio: 0.5, Pure NODISC).
+[METRIC] round=8 test_accuracy=0.5592 test_loss=0.6921 train_accuracy=0.5054 round_epochs=12.0000
+[02:55:48] Round 9/30 finished (Matrix B, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=9 test_accuracy=0.5740 test_loss=0.6919 train_accuracy=0.5111 round_epochs=10.0000
+[03:40:29] Round 10/30 finished (Matrix A, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=10 test_accuracy=0.5707 test_loss=0.6916 train_accuracy=0.5082 round_epochs=11.0000
+[04:21:04] Round 11/30 finished (Matrix B, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=11 test_accuracy=0.5803 test_loss=0.6910 train_accuracy=0.5177 round_epochs=10.0000
+[04:57:46] Round 12/30 finished (Matrix A, Epochs: 9, Ratio: 0.5, Pure NODISC).
+[METRIC] round=12 test_accuracy=0.6200 test_loss=0.6905 train_accuracy=0.5149 round_epochs=9.0000
+[05:34:26] Round 13/30 finished (Matrix B, Epochs: 9, Ratio: 0.5, Pure NODISC).
+[METRIC] round=13 test_accuracy=0.5988 test_loss=0.6892 train_accuracy=0.5292 round_epochs=9.0000
+[06:03:12] Round 14/30 finished (Matrix A, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=14 test_accuracy=0.6526 test_loss=0.6878 train_accuracy=0.5255 round_epochs=7.0000
+[06:27:51] Round 15/30 finished (Matrix B, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=15 test_accuracy=0.6381 test_loss=0.6833 train_accuracy=0.5519 round_epochs=6.0000
+[06:48:30] Round 16/30 finished (Matrix A, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=16 test_accuracy=0.6925 test_loss=0.6767 train_accuracy=0.5495 round_epochs=5.0000
+[07:01:09] Round 17/30 finished (Matrix B, Epochs: 3, Ratio: 0.5, Pure NODISC).
+[METRIC] round=17 test_accuracy=0.7212 test_loss=0.6458 train_accuracy=0.5880 round_epochs=3.0000
+[07:13:49] Round 18/30 finished (Matrix A, Epochs: 3, Ratio: 0.5, Pure NODISC).
+[METRIC] round=18 test_accuracy=0.7597 test_loss=0.5868 train_accuracy=0.6239 round_epochs=3.0000
+[07:30:28] Round 19/30 finished (Matrix B, Epochs: 4, Ratio: 0.5, Pure NODISC).
+[METRIC] round=19 test_accuracy=0.7033 test_loss=0.6249 train_accuracy=0.5769 round_epochs=4.0000
+[08:15:12] Round 20/30 finished (Matrix A, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=20 test_accuracy=0.7792 test_loss=0.5213 train_accuracy=0.7053 round_epochs=11.0000
+[08:47:55] Round 21/30 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=21 test_accuracy=0.7738 test_loss=0.5509 train_accuracy=0.5932 round_epochs=8.0000
+[09:28:39] Round 22/30 finished (Matrix A, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=22 test_accuracy=0.7933 test_loss=0.5021 train_accuracy=0.7400 round_epochs=10.0000
+[10:01:16] Round 23/30 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=23 test_accuracy=0.7880 test_loss=0.5148 train_accuracy=0.6256 round_epochs=8.0000
+[10:30:01] Round 24/30 finished (Matrix A, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=24 test_accuracy=0.7999 test_loss=0.4856 train_accuracy=0.7449 round_epochs=7.0000
+[11:02:43] Round 25/30 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=25 test_accuracy=0.7853 test_loss=0.4984 train_accuracy=0.6521 round_epochs=8.0000
+[11:31:28] Round 26/30 finished (Matrix A, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=26 test_accuracy=0.8138 test_loss=0.4573 train_accuracy=0.7571 round_epochs=7.0000

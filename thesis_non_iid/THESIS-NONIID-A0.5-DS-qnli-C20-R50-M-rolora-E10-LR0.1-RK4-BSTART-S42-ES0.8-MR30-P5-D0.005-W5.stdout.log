@@ -1,0 +1,18 @@
+[22:35:48] Starting THESIS-NONIID-A0.5-DS-qnli-C20-R50-M-rolora-E10-LR0.1-RK4-BSTART-S42-ES0.8-MR30-P5-D0.005-W5 (FedAvg-RoLoRA) on cuda:0...
+[22:35:55] [FedAvg-RoLoRA] Starting 50 rounds on QNLI (C=20, E=10, alpha=0.5).
+[METRIC] round=1/50 matrix=B epochs=10 train_loss=0.4385 acc=0.4946 var=4.1463e+00
+[METRIC] round=2/50 matrix=A epochs=10 train_loss=0.4751 acc=0.4942 var=6.0500e+00
+[METRIC] round=3/50 matrix=B epochs=10 train_loss=0.3611 acc=0.5576 var=9.1565e-01
+[METRIC] round=4/50 matrix=A epochs=10 train_loss=0.3931 acc=0.6502 var=3.9355e+00
+[METRIC] round=5/50 matrix=B epochs=10 train_loss=0.3512 acc=0.6539 var=1.0423e+00
+[METRIC] round=6/50 matrix=A epochs=10 train_loss=0.3118 acc=0.7666 var=1.8724e+00
+[METRIC] round=7/50 matrix=B epochs=10 train_loss=0.3600 acc=0.4946 var=1.0092e+00
+[METRIC] round=8/50 matrix=A epochs=10 train_loss=0.3552 acc=0.4957 var=1.0099e+00
+[METRIC] round=9/50 matrix=B epochs=10 train_loss=0.3354 acc=0.7792 var=1.9813e+00
+[METRIC] round=10/50 matrix=A epochs=10 train_loss=0.3100 acc=0.6709 var=1.2523e+00
+[METRIC] round=11/50 matrix=B epochs=10 train_loss=0.3121 acc=0.7822 var=2.2513e+00
+[METRIC] round=12/50 matrix=A epochs=10 train_loss=0.3418 acc=0.5078 var=1.4636e+00
+[METRIC] round=13/50 matrix=B epochs=10 train_loss=0.2858 acc=0.8051 var=2.0832e+00
+[METRIC] round=14/50 matrix=A epochs=10 train_loss=0.3520 acc=0.5742 var=1.5070e+00
+[METRIC] round=15/50 matrix=B epochs=10 train_loss=0.2545 acc=0.7985 var=2.4539e+00
+[METRIC] round=16/50 matrix=A epochs=10 train_loss=0.3310 acc=0.8001 var=1.2368e+00

@@ -1,0 +1,37 @@
+[22:45:38] Starting THESIS-RBASE-PURE-DS-qnli-C20-R50-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO0.5-NODISC-BSTART-NOGUARD-S42-ES0.8-MR6-P3-D0.005-W3 on cuda:0...
+[22:50:25] Round 1/50 finished (Matrix B, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=1 test_accuracy=0.4946 test_loss=0.7006 train_accuracy=0.4949 round_epochs=1.0000
+[22:55:03] Round 2/50 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=2 test_accuracy=0.4946 test_loss=0.6982 train_accuracy=0.4963 round_epochs=1.0000
+[23:03:43] Round 3/50 finished (Matrix B, Epochs: 2, Ratio: 0.5, Pure NODISC).
+[METRIC] round=3 test_accuracy=0.4946 test_loss=0.6934 train_accuracy=0.4990 round_epochs=2.0000
+[23:44:49] Round 4/50 finished (Matrix A, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=4 test_accuracy=0.5429 test_loss=0.6924 train_accuracy=0.5050 round_epochs=10.0000
+[00:38:07] Round 5/50 finished (Matrix B, Epochs: 13, Ratio: 0.5, Pure NODISC).
+[METRIC] round=5 test_accuracy=0.5614 test_loss=0.6922 train_accuracy=0.5088 round_epochs=13.0000
+[01:23:26] Round 6/50 finished (Matrix A, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=6 test_accuracy=0.5953 test_loss=0.6914 train_accuracy=0.5114 round_epochs=11.0000
+[01:56:31] Round 7/50 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=7 test_accuracy=0.6008 test_loss=0.6893 train_accuracy=0.5229 round_epochs=8.0000
+[02:17:24] Round 8/50 finished (Matrix A, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=8 test_accuracy=0.6427 test_loss=0.6868 train_accuracy=0.5300 round_epochs=5.0000
+[02:30:12] Round 9/50 finished (Matrix B, Epochs: 3, Ratio: 0.5, Pure NODISC).
+[METRIC] round=9 test_accuracy=0.7033 test_loss=0.6661 train_accuracy=0.5550 round_epochs=3.0000
+[02:34:52] Round 10/50 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=10 test_accuracy=0.5845 test_loss=0.6493 train_accuracy=0.5727 round_epochs=1.0000
+[02:47:41] Round 11/50 finished (Matrix B, Epochs: 3, Ratio: 0.5, Pure NODISC).
+[METRIC] round=11 test_accuracy=0.5030 test_loss=0.6962 train_accuracy=0.5939 round_epochs=3.0000
+[03:32:55] Round 12/50 finished (Matrix A, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=12 test_accuracy=0.7765 test_loss=0.4862 train_accuracy=0.6938 round_epochs=11.0000
+[04:05:58] Round 13/50 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=13 test_accuracy=0.6886 test_loss=0.6298 train_accuracy=0.5474 round_epochs=8.0000
+[04:55:20] Round 14/50 finished (Matrix A, Epochs: 12, Ratio: 0.5, Pure NODISC).
+[METRIC] round=14 test_accuracy=0.8082 test_loss=0.4758 train_accuracy=0.7214 round_epochs=12.0000
+[05:16:15] Round 15/50 finished (Matrix B, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=15 test_accuracy=0.8069 test_loss=0.4507 train_accuracy=0.7040 round_epochs=5.0000
+[05:20:58] Round 16/50 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=16 test_accuracy=0.5404 test_loss=0.7783 train_accuracy=0.5459 round_epochs=1.0000
+[06:14:20] Round 17/50 finished (Matrix B, Epochs: 13, Ratio: 0.5, Pure NODISC).
+[METRIC] round=17 test_accuracy=0.7913 test_loss=0.4796 train_accuracy=0.7663 round_epochs=13.0000
+[06:14:20] Early stopping triggered at round 17.
+[06:14:20] Execution finished for THESIS-RBASE-PURE-DS-qnli-C20-R50-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO0.5-NODISC-BSTART-NOGUARD-S42-ES0.8-MR6-P3-D0.005-W3.

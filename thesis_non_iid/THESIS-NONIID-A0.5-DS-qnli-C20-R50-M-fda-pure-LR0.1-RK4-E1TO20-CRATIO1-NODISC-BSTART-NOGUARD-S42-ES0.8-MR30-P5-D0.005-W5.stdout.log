@@ -1,0 +1,13 @@
+[22:35:48] Starting THESIS-NONIID-A0.5-DS-qnli-C20-R50-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO1-NODISC-BSTART-NOGUARD-S42-ES0.8-MR30-P5-D0.005-W5 (FDA-RoLoRA-DualTrack-Pure) on cuda:0...
+[22:35:55] [FDA-RoLoRA-Pure] Starting 50 rounds on QNLI (C=20, k=1.0, E=1..20, alpha=0.5).
+[METRIC] round=1/50 matrix=B epochs=1 train_loss=0.6684 acc=0.4946 var=2.3494e-01
+[METRIC] round=2/50 matrix=A epochs=1 train_loss=0.6780 acc=0.4946 var=1.4423e-01
+[METRIC] round=3/50 matrix=B epochs=20 train_loss=0.3739 acc=0.4946 var=3.3540e+00
+[METRIC] round=4/50 matrix=A epochs=13 train_loss=0.5258 acc=0.4946 var=2.9366e+00
+[METRIC] round=5/50 matrix=B epochs=20 train_loss=0.3544 acc=0.4955 var=1.6287e+00
+[METRIC] round=6/50 matrix=A epochs=18 train_loss=0.3598 acc=0.7884 var=4.7016e+00
+[METRIC] round=7/50 matrix=B epochs=12 train_loss=0.3476 acc=0.6791 var=1.6931e+00
+[METRIC] round=8/50 matrix=A epochs=20 train_loss=0.2919 acc=0.7877 var=2.5212e+00
+[METRIC] round=9/50 matrix=B epochs=15 train_loss=0.3432 acc=0.4946 var=2.8484e+00
+[METRIC] round=10/50 matrix=A epochs=16 train_loss=0.3009 acc=0.7600 var=2.5232e+00
+[METRIC] round=11/50 matrix=B epochs=17 train_loss=0.2715 acc=0.7564 var=3.9115e+00

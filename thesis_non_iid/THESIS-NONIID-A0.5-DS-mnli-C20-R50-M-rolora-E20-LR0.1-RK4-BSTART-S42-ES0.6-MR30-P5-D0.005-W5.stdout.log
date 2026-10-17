@@ -1,0 +1,11 @@
+[22:35:48] Starting THESIS-NONIID-A0.5-DS-mnli-C20-R50-M-rolora-E20-LR0.1-RK4-BSTART-S42-ES0.6-MR30-P5-D0.005-W5 (FedAvg-RoLoRA) on cuda:1...
+[22:35:56] [FedAvg-RoLoRA] Starting 50 rounds on MNLI (C=20, E=20, alpha=0.5).
+[METRIC] round=1/50 matrix=B epochs=20 train_loss=0.4995 acc=0.3292 var=9.6419e+00
+[METRIC] round=2/50 matrix=A epochs=20 train_loss=0.5969 acc=0.3349 var=1.5738e+01
+[METRIC] round=3/50 matrix=B epochs=20 train_loss=0.4066 acc=0.3182 var=2.5428e+00
+[METRIC] round=4/50 matrix=A epochs=20 train_loss=0.5403 acc=0.3235 var=8.4352e+00
+[METRIC] round=5/50 matrix=B epochs=20 train_loss=0.4004 acc=0.4070 var=2.3127e+00
+[METRIC] round=6/50 matrix=A epochs=20 train_loss=0.4739 acc=0.3352 var=4.9704e+00
+[METRIC] round=7/50 matrix=B epochs=20 train_loss=0.4012 acc=0.3533 var=2.3650e+00
+[METRIC] round=8/50 matrix=A epochs=20 train_loss=0.4602 acc=0.3284 var=3.9495e+00
+[METRIC] round=9/50 matrix=B epochs=20 train_loss=0.3863 acc=0.4529 var=2.9064e+00

@@ -1,0 +1,57 @@
+[22:45:38] Starting THESIS-RBASE-PURE-DS-mnli-C20-R50-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO0.5-NODISC-BSTART-NOGUARD-S42-ES0.6-MR6-P3-D0.005-W3 on cuda:1...
+[22:51:23] Round 1/50 finished (Matrix B, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=1 test_accuracy=0.3533 matched_accuracy=0.3545 mismatched_accuracy=0.3522 train_accuracy=0.3438 round_epochs=1.0000
+[22:57:02] Round 2/50 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=2 test_accuracy=0.3533 matched_accuracy=0.3545 mismatched_accuracy=0.3522 train_accuracy=0.3467 round_epochs=1.0000
+[23:17:10] Round 3/50 finished (Matrix B, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=3 test_accuracy=0.3502 matched_accuracy=0.3507 mismatched_accuracy=0.3497 train_accuracy=0.3481 round_epochs=5.0000
+[23:22:48] Round 4/50 finished (Matrix A, Epochs: 1, Ratio: 0.5, Pure NODISC).
+[METRIC] round=4 test_accuracy=0.3375 matched_accuracy=0.3381 mismatched_accuracy=0.3370 train_accuracy=0.3471 round_epochs=1.0000
+[23:57:20] Round 5/50 finished (Matrix B, Epochs: 9, Ratio: 0.5, Pure NODISC).
+[METRIC] round=5 test_accuracy=0.3287 matched_accuracy=0.3275 mismatched_accuracy=0.3299 train_accuracy=0.3539 round_epochs=9.0000
+[00:57:24] Round 6/50 finished (Matrix A, Epochs: 16, Ratio: 0.5, Pure NODISC).
+[METRIC] round=6 test_accuracy=0.3303 matched_accuracy=0.3284 mismatched_accuracy=0.3322 train_accuracy=0.3556 round_epochs=16.0000
+[01:21:07] Round 7/50 finished (Matrix B, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=7 test_accuracy=0.3292 matched_accuracy=0.3283 mismatched_accuracy=0.3301 train_accuracy=0.3574 round_epochs=6.0000
+[02:02:56] Round 8/50 finished (Matrix A, Epochs: 11, Ratio: 0.5, Pure NODISC).
+[METRIC] round=8 test_accuracy=0.3350 matched_accuracy=0.3339 mismatched_accuracy=0.3360 train_accuracy=0.3591 round_epochs=11.0000
+[02:30:17] Round 9/50 finished (Matrix B, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=9 test_accuracy=0.3318 matched_accuracy=0.3307 mismatched_accuracy=0.3328 train_accuracy=0.3619 round_epochs=7.0000
+[02:57:37] Round 10/50 finished (Matrix A, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=10 test_accuracy=0.3730 matched_accuracy=0.3709 mismatched_accuracy=0.3751 train_accuracy=0.3697 round_epochs=7.0000
+[03:10:29] Round 11/50 finished (Matrix B, Epochs: 3, Ratio: 0.5, Pure NODISC).
+[METRIC] round=11 test_accuracy=0.4223 matched_accuracy=0.4138 mismatched_accuracy=0.4308 train_accuracy=0.3832 round_epochs=3.0000
+[03:30:39] Round 12/50 finished (Matrix A, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=12 test_accuracy=0.4384 matched_accuracy=0.4281 mismatched_accuracy=0.4486 train_accuracy=0.4212 round_epochs=5.0000
+[03:47:08] Round 13/50 finished (Matrix B, Epochs: 4, Ratio: 0.5, Pure NODISC).
+[METRIC] round=13 test_accuracy=0.4711 matched_accuracy=0.4632 mismatched_accuracy=0.4789 train_accuracy=0.4002 round_epochs=4.0000
+[03:56:21] Round 14/50 finished (Matrix A, Epochs: 2, Ratio: 0.5, Pure NODISC).
+[METRIC] round=14 test_accuracy=0.4775 matched_accuracy=0.4679 mismatched_accuracy=0.4872 train_accuracy=0.4575 round_epochs=2.0000
+[04:23:41] Round 15/50 finished (Matrix B, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=15 test_accuracy=0.4768 matched_accuracy=0.4675 mismatched_accuracy=0.4860 train_accuracy=0.4292 round_epochs=7.0000
+[04:47:27] Round 16/50 finished (Matrix A, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=16 test_accuracy=0.5136 matched_accuracy=0.5048 mismatched_accuracy=0.5224 train_accuracy=0.5025 round_epochs=6.0000
+[05:18:24] Round 17/50 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=17 test_accuracy=0.5377 matched_accuracy=0.5293 mismatched_accuracy=0.5461 train_accuracy=0.4501 round_epochs=8.0000
+[05:45:46] Round 18/50 finished (Matrix A, Epochs: 7, Ratio: 0.5, Pure NODISC).
+[METRIC] round=18 test_accuracy=0.5604 matched_accuracy=0.5529 mismatched_accuracy=0.5679 train_accuracy=0.5449 round_epochs=7.0000
+[06:23:57] Round 19/50 finished (Matrix B, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=19 test_accuracy=0.5887 matched_accuracy=0.5825 mismatched_accuracy=0.5949 train_accuracy=0.4979 round_epochs=10.0000
+[06:44:03] Round 20/50 finished (Matrix A, Epochs: 5, Ratio: 0.5, Pure NODISC).
+[METRIC] round=20 test_accuracy=0.6192 matched_accuracy=0.6126 mismatched_accuracy=0.6257 train_accuracy=0.5844 round_epochs=5.0000
+[07:15:00] Round 21/50 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=21 test_accuracy=0.6281 matched_accuracy=0.6201 mismatched_accuracy=0.6362 train_accuracy=0.5542 round_epochs=8.0000
+[07:38:45] Round 22/50 finished (Matrix A, Epochs: 6, Ratio: 0.5, Pure NODISC).
+[METRIC] round=22 test_accuracy=0.6465 matched_accuracy=0.6361 mismatched_accuracy=0.6568 train_accuracy=0.5587 round_epochs=6.0000
+[08:09:40] Round 23/50 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=23 test_accuracy=0.6739 matched_accuracy=0.6644 mismatched_accuracy=0.6834 train_accuracy=0.6231 round_epochs=8.0000
+[08:44:15] Round 24/50 finished (Matrix A, Epochs: 9, Ratio: 0.5, Pure NODISC).
+[METRIC] round=24 test_accuracy=0.6709 matched_accuracy=0.6627 mismatched_accuracy=0.6792 train_accuracy=0.5080 round_epochs=9.0000
+[09:15:10] Round 25/50 finished (Matrix B, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=25 test_accuracy=0.7000 matched_accuracy=0.6926 mismatched_accuracy=0.7074 train_accuracy=0.6736 round_epochs=8.0000
+[09:46:07] Round 26/50 finished (Matrix A, Epochs: 8, Ratio: 0.5, Pure NODISC).
+[METRIC] round=26 test_accuracy=0.6842 matched_accuracy=0.6772 mismatched_accuracy=0.6911 train_accuracy=0.6051 round_epochs=8.0000
+[10:24:14] Round 27/50 finished (Matrix B, Epochs: 10, Ratio: 0.5, Pure NODISC).
+[METRIC] round=27 test_accuracy=0.7186 matched_accuracy=0.7137 mismatched_accuracy=0.7236 train_accuracy=0.6978 round_epochs=10.0000
+[10:58:49] Round 28/50 finished (Matrix A, Epochs: 9, Ratio: 0.5, Pure NODISC).
+[METRIC] round=28 test_accuracy=0.7233 matched_accuracy=0.7165 mismatched_accuracy=0.7302 train_accuracy=0.6687 round_epochs=9.0000

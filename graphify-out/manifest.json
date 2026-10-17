@@ -1,0 +1,187 @@
+{
+  "assess.py": {
+    "mtime": 1786022789.8026125,
+    "ast_hash": "ddd38e82a3d58f798ad1cccab96d68f0",
+    "semantic_hash": "ddd38e82a3d58f798ad1cccab96d68f0"
+  },
+  "benchmark.py": {
+    "mtime": 1782308645.7888503,
+    "ast_hash": "50443cd4042b5f42c9e47ca6ad80670c",
+    "semantic_hash": "50443cd4042b5f42c9e47ca6ad80670c"
+  },
+  "dynamic_variance_simulation.py": {
+    "mtime": 1782308645.7904873,
+    "ast_hash": "ad6255341b41d627eb8a3c7c5b0194e9",
+    "semantic_hash": "ad6255341b41d627eb8a3c7c5b0194e9"
+  },
+  "evaluate_results.py": {
+    "mtime": 1782308645.7916038,
+    "ast_hash": "d1342b74eecba8e4f8ea91d0e4166f56",
+    "semantic_hash": "d1342b74eecba8e4f8ea91d0e4166f56"
+  },
+  "fdaopt/compare_rola_test.py": {
+    "mtime": 1782308645.7932596,
+    "ast_hash": "ea21c9aa09b02857fa1c67c99b6f5b5a",
+    "semantic_hash": "ea21c9aa09b02857fa1c67c99b6f5b5a"
+  },
+  "fdaopt/datasets/fed_data_prep.py": {
+    "mtime": 1786739953.8840811,
+    "ast_hash": "540914a6ce103967166c2905e616ebdd",
+    "semantic_hash": "540914a6ce103967166c2905e616ebdd"
+  },
+  "fdaopt/datasets/test_fed_data_prep.py": {
+    "mtime": 1782308645.7943387,
+    "ast_hash": "f0c1e9857992bb26893a60267995d831",
+    "semantic_hash": "f0c1e9857992bb26893a60267995d831"
+  },
+  "fdaopt/fda_rolora_test.py": {
+    "mtime": 1782308645.7954547,
+    "ast_hash": "83e33017bbbabb9b51e19bc2596deb19",
+    "semantic_hash": "83e33017bbbabb9b51e19bc2596deb19"
+  },
+  "fdaopt/main.py": {
+    "mtime": 1786739953.8790002,
+    "ast_hash": "afdc21a4fba665364c0909938e5966f3",
+    "semantic_hash": "afdc21a4fba665364c0909938e5966f3"
+  },
+  "fdaopt/metrics/mentrics_handler.py": {
+    "mtime": 1786739953.8855884,
+    "ast_hash": "c3d7cae7b09be3bd16cf4cf8c283ecd7",
+    "semantic_hash": "c3d7cae7b09be3bd16cf4cf8c283ecd7"
+  },
+  "fdaopt/miscellaneous/create_hyperparameters.py": {
+    "mtime": 1786739953.8840811,
+    "ast_hash": "3b4c0a2ecf6c5d746aadd641b787e9e8",
+    "semantic_hash": "3b4c0a2ecf6c5d746aadd641b787e9e8"
+  },
+  "fdaopt/miscellaneous/parameter_tools.py": {
+    "mtime": 1786739953.882996,
+    "ast_hash": "21a0a2e3bb95b95cd1e87eb8f18a2855",
+    "semantic_hash": "21a0a2e3bb95b95cd1e87eb8f18a2855"
+  },
+  "fdaopt/models/ops.py": {
+    "mtime": 1786739953.8790002,
+    "ast_hash": "ac2fba555bde03ca0a2dd62e8073ad65",
+    "semantic_hash": "ac2fba555bde03ca0a2dd62e8073ad65"
+  },
+  "fdaopt/rolora_test.py": {
+    "mtime": 1782308645.7965605,
+    "ast_hash": "117ca448416726f0178002651f3c0123",
+    "semantic_hash": "117ca448416726f0178002651f3c0123"
+  },
+  "fdaopt/sanity_check.py": {
+    "mtime": 1782308645.7977183,
+    "ast_hash": "ad7aff903e98ff1f3669e2466c5aafc7",
+    "semantic_hash": "ad7aff903e98ff1f3669e2466c5aafc7"
+  },
+  "fdaopt/sanity_test.py": {
+    "mtime": 1782308645.7990668,
+    "ast_hash": "c036c13bbb09054f4732a7952987579a",
+    "semantic_hash": "c036c13bbb09054f4732a7952987579a"
+  },
+  "fdaopt/svd_rola_test.py": {
+    "mtime": 1782308645.8001626,
+    "ast_hash": "90ae30a705b72728deb7a1c9bf4c249e",
+    "semantic_hash": "90ae30a705b72728deb7a1c9bf4c249e"
+  },
+  "fdaopt/training/fda_opt.py": {
+    "mtime": 1786739953.8817034,
+    "ast_hash": "26994bd87a4bd6beafdfcdb2486cb977",
+    "semantic_hash": "26994bd87a4bd6beafdfcdb2486cb977"
+  },
+  "fdaopt/training/fed_opt.py": {
+    "mtime": 1786739953.8817034,
+    "ast_hash": "1d9980fe0c9be83f505a68032c474b16",
+    "semantic_hash": "1d9980fe0c9be83f505a68032c474b16"
+  },
+  "fdaopt/training/fed_train.py": {
+    "mtime": 1786739953.881079,
+    "ast_hash": "b5c3fc4f67869fedd3bb8a25c5b3ebf3",
+    "semantic_hash": "b5c3fc4f67869fedd3bb8a25c5b3ebf3"
+  },
+  "fdaopt/training/optimizers.py": {
+    "mtime": 1786739953.880509,
+    "ast_hash": "21324a21d6e772cc424106ceddaccbe5",
+    "semantic_hash": "21324a21d6e772cc424106ceddaccbe5"
+  },
+  "fdaopt/training/sketch.py": {
+    "mtime": 1786739953.882996,
+    "ast_hash": "efab3a995c8874818b49aeb8f7690b00",
+    "semantic_hash": "efab3a995c8874818b49aeb8f7690b00"
+  },
+  "fdaopt/utils.py": {
+    "mtime": 1786739953.8779993,
+    "ast_hash": "956710e0d5a75ae1f262f388acfb669f",
+    "semantic_hash": "956710e0d5a75ae1f262f388acfb669f"
+  },
+  "llm_evaluation_payload.json": {
+    "mtime": 1786022875.975667,
+    "ast_hash": "4e06f78ce4c97fa40213759f8af9a8e3",
+    "semantic_hash": "4e06f78ce4c97fa40213759f8af9a8e3"
+  },
+  "simulator.py": {
+    "mtime": 1775593051.3696525,
+    "ast_hash": "b61d8d3cef2f7e7c21089e755085c7a8",
+    "semantic_hash": "b61d8d3cef2f7e7c21089e755085c7a8"
+  },
+  "toy_eval.py": {
+    "mtime": 1786022848.8928783,
+    "ast_hash": "7fee81bfc12911643b83c68ff23cbe7d",
+    "semantic_hash": "7fee81bfc12911643b83c68ff23cbe7d"
+  },
+  "toy_evaluation_payload.json": {
+    "mtime": 1786022870.9512956,
+    "ast_hash": "3c6afff25d2c154c3fa66ca3fc25b2d4",
+    "semantic_hash": "3c6afff25d2c154c3fa66ca3fc25b2d4"
+  },
+  "toy_metrics_llm_summary.json": {
+    "mtime": 1786022852.20312,
+    "ast_hash": "eb108f873baab51b0a6099358ac2efa7",
+    "semantic_hash": "eb108f873baab51b0a6099358ac2efa7"
+  },
+  "variance_simulation.py": {
+    "mtime": 1782308645.8122177,
+    "ast_hash": "03ff3c0c159962f9648c9d47f4388a54",
+    "semantic_hash": "03ff3c0c159962f9648c9d47f4388a54"
+  },
+  "visualize_metrics.py": {
+    "mtime": 1782326445.432452,
+    "ast_hash": "99194408dee377afe95e33c5cb10920a",
+    "semantic_hash": "99194408dee377afe95e33c5cb10920a"
+  },
+  "README.md": {
+    "mtime": 1775593051.2801244,
+    "ast_hash": "102ea64a294f4c7b4548242aee81a8c7",
+    "semantic_hash": "102ea64a294f4c7b4548242aee81a8c7"
+  },
+  "requirements.txt": {
+    "mtime": 1782308645.8023074,
+    "ast_hash": "a813c38e1aa1b17fe29eba281b7f4d02",
+    "semantic_hash": "a813c38e1aa1b17fe29eba281b7f4d02"
+  },
+  "requirements_old.txt": {
+    "mtime": 1782308645.80339,
+    "ast_hash": "76d984eb7635823458ba0e4168927e1b",
+    "semantic_hash": "76d984eb7635823458ba0e4168927e1b"
+  },
+  "requirements_server.txt": {
+    "mtime": 1782308645.8045125,
+    "ast_hash": "6c3b49adf07669a077a105818743b541",
+    "semantic_hash": "6c3b49adf07669a077a105818743b541"
+  },
+  "fdaopt/models/toy_model.py": {
+    "mtime": 1786739953.8790002,
+    "ast_hash": "b8b741fa7023fdd5f9e9f1dc69ab0ca3",
+    "semantic_hash": "b8b741fa7023fdd5f9e9f1dc69ab0ca3"
+  },
+  "AGENTS.md": {
+    "mtime": 1786737700.4248536,
+    "ast_hash": "6148b965fe47a0cb8fb04609fcaeb501",
+    "semantic_hash": "6148b965fe47a0cb8fb04609fcaeb501"
+  },
+  "GEMINI.md": {
+    "mtime": 1786737697.0573082,
+    "ast_hash": "6148b965fe47a0cb8fb04609fcaeb501",
+    "semantic_hash": "6148b965fe47a0cb8fb04609fcaeb501"
+  }
+}

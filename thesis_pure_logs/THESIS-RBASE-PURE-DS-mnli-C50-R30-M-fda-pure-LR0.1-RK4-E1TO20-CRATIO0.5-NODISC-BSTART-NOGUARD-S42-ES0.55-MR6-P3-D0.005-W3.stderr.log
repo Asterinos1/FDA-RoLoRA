@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/akaralis/ARIS-FDA-LoRA/thesis_pure_experiments.py", line 579, in <module>
+    main()
+  File "/home/akaralis/ARIS-FDA-LoRA/thesis_pure_experiments.py", line 547, in main
+    execute_run(args.run_config)
+  File "/home/akaralis/ARIS-FDA-LoRA/thesis_pure_experiments.py", line 393, in execute_run
+    opt_fn = resolve_pure_optimizer()
+  File "/home/akaralis/ARIS-FDA-LoRA/thesis_pure_experiments.py", line 385, in resolve_pure_optimizer
+    raise RuntimeError("Unable to locate fda_rolora_dual_track_pure_opt!")
+RuntimeError: Unable to locate fda_rolora_dual_track_pure_opt!

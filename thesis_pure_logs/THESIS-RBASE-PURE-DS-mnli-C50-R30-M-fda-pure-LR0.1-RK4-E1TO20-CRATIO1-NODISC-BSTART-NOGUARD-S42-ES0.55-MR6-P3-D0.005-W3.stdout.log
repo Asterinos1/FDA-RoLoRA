@@ -1,0 +1,19 @@
+[06:14:25] Starting THESIS-RBASE-PURE-DS-mnli-C50-R30-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO1-NODISC-BSTART-NOGUARD-S42-ES0.55-MR6-P3-D0.005-W3 on cuda:0...
+[06:20:09] Round 1/30 finished (Matrix B, Epochs: 1, Ratio: 1.0, Pure NODISC).
+[METRIC] round=1 test_accuracy=0.3533 matched_accuracy=0.3545 mismatched_accuracy=0.3522 train_accuracy=0.3416 round_epochs=1.0000
+[06:25:43] Round 2/30 finished (Matrix A, Epochs: 1, Ratio: 1.0, Pure NODISC).
+[METRIC] round=2 test_accuracy=0.3533 matched_accuracy=0.3545 mismatched_accuracy=0.3522 train_accuracy=0.3448 round_epochs=1.0000
+[06:59:49] Round 3/30 finished (Matrix B, Epochs: 9, Ratio: 1.0, Pure NODISC).
+[METRIC] round=3 test_accuracy=0.3533 matched_accuracy=0.3547 mismatched_accuracy=0.3519 train_accuracy=0.3463 round_epochs=9.0000
+[07:05:22] Round 4/30 finished (Matrix A, Epochs: 1, Ratio: 1.0, Pure NODISC).
+[METRIC] round=4 test_accuracy=0.3532 matched_accuracy=0.3545 mismatched_accuracy=0.3519 train_accuracy=0.3514 round_epochs=1.0000
+[07:53:42] Round 5/30 finished (Matrix B, Epochs: 13, Ratio: 1.0, Pure NODISC).
+[METRIC] round=5 test_accuracy=0.3419 matched_accuracy=0.3430 mismatched_accuracy=0.3408 train_accuracy=0.3491 round_epochs=13.0000
+[08:17:09] Round 6/30 finished (Matrix A, Epochs: 6, Ratio: 1.0, Pure NODISC).
+[METRIC] round=6 test_accuracy=0.3290 matched_accuracy=0.3269 mismatched_accuracy=0.3310 train_accuracy=0.3519 round_epochs=6.0000
+[09:12:41] Round 7/30 finished (Matrix B, Epochs: 15, Ratio: 1.0, Pure NODISC).
+[METRIC] round=7 test_accuracy=0.3286 matched_accuracy=0.3275 mismatched_accuracy=0.3298 train_accuracy=0.3540 round_epochs=15.0000
+[10:26:13] Round 8/30 finished (Matrix A, Epochs: 20, Ratio: 1.0, Pure NODISC).
+[METRIC] round=8 test_accuracy=0.3287 matched_accuracy=0.3276 mismatched_accuracy=0.3298 train_accuracy=0.3560 round_epochs=20.0000
+[11:25:16] Round 9/30 finished (Matrix B, Epochs: 16, Ratio: 1.0, Pure NODISC).
+[METRIC] round=9 test_accuracy=0.3284 matched_accuracy=0.3274 mismatched_accuracy=0.3294 train_accuracy=0.3577 round_epochs=16.0000

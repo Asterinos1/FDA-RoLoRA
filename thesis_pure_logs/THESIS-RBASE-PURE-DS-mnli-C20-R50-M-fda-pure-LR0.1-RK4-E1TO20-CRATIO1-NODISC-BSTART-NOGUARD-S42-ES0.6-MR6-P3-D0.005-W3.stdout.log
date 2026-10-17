@@ -1,0 +1,41 @@
+[22:45:38] Starting THESIS-RBASE-PURE-DS-mnli-C20-R50-M-fda-pure-LR0.1-RK4-E1TO20-CRATIO1-NODISC-BSTART-NOGUARD-S42-ES0.6-MR6-P3-D0.005-W3 on cuda:0...
+[22:51:22] Round 1/50 finished (Matrix B, Epochs: 1, Ratio: 1.0, Pure NODISC).
+[METRIC] round=1 test_accuracy=0.3533 matched_accuracy=0.3545 mismatched_accuracy=0.3522 train_accuracy=0.3438 round_epochs=1.0000
+[22:56:58] Round 2/50 finished (Matrix A, Epochs: 1, Ratio: 1.0, Pure NODISC).
+[METRIC] round=2 test_accuracy=0.3533 matched_accuracy=0.3545 mismatched_accuracy=0.3522 train_accuracy=0.3467 round_epochs=1.0000
+[23:27:54] Round 3/50 finished (Matrix B, Epochs: 8, Ratio: 1.0, Pure NODISC).
+[METRIC] round=3 test_accuracy=0.3458 matched_accuracy=0.3459 mismatched_accuracy=0.3457 train_accuracy=0.3483 round_epochs=8.0000
+[23:33:31] Round 4/50 finished (Matrix A, Epochs: 1, Ratio: 1.0, Pure NODISC).
+[METRIC] round=4 test_accuracy=0.3291 matched_accuracy=0.3269 mismatched_accuracy=0.3312 train_accuracy=0.3480 round_epochs=1.0000
+[00:36:58] Round 5/50 finished (Matrix B, Epochs: 17, Ratio: 1.0, Pure NODISC).
+[METRIC] round=5 test_accuracy=0.3286 matched_accuracy=0.3275 mismatched_accuracy=0.3297 train_accuracy=0.3544 round_epochs=17.0000
+[01:51:25] Round 6/50 finished (Matrix A, Epochs: 20, Ratio: 1.0, Pure NODISC).
+[METRIC] round=6 test_accuracy=0.3289 matched_accuracy=0.3280 mismatched_accuracy=0.3298 train_accuracy=0.3562 round_epochs=20.0000
+[02:29:37] Round 7/50 finished (Matrix B, Epochs: 10, Ratio: 1.0, Pure NODISC).
+[METRIC] round=7 test_accuracy=0.3285 matched_accuracy=0.3276 mismatched_accuracy=0.3295 train_accuracy=0.3605 round_epochs=10.0000
+[03:22:15] Round 8/50 finished (Matrix A, Epochs: 14, Ratio: 1.0, Pure NODISC).
+[METRIC] round=8 test_accuracy=0.3459 matched_accuracy=0.3456 mismatched_accuracy=0.3461 train_accuracy=0.3650 round_epochs=14.0000
+[03:45:53] Round 9/50 finished (Matrix B, Epochs: 6, Ratio: 1.0, Pure NODISC).
+[METRIC] round=9 test_accuracy=0.4432 matched_accuracy=0.4313 mismatched_accuracy=0.4551 train_accuracy=0.3793 round_epochs=6.0000
+[04:05:58] Round 10/50 finished (Matrix A, Epochs: 5, Ratio: 1.0, Pure NODISC).
+[METRIC] round=10 test_accuracy=0.4439 matched_accuracy=0.4340 mismatched_accuracy=0.4537 train_accuracy=0.4266 round_epochs=5.0000
+[04:26:01] Round 11/50 finished (Matrix B, Epochs: 5, Ratio: 1.0, Pure NODISC).
+[METRIC] round=11 test_accuracy=0.4851 matched_accuracy=0.4755 mismatched_accuracy=0.4946 train_accuracy=0.4063 round_epochs=5.0000
+[04:53:23] Round 12/50 finished (Matrix A, Epochs: 7, Ratio: 1.0, Pure NODISC).
+[METRIC] round=12 test_accuracy=0.4997 matched_accuracy=0.4888 mismatched_accuracy=0.5105 train_accuracy=0.4782 round_epochs=7.0000
+[05:53:11] Round 13/50 finished (Matrix B, Epochs: 16, Ratio: 1.0, Pure NODISC).
+[METRIC] round=13 test_accuracy=0.5197 matched_accuracy=0.5111 mismatched_accuracy=0.5283 train_accuracy=0.4160 round_epochs=16.0000
+[06:31:05] Round 14/50 finished (Matrix A, Epochs: 10, Ratio: 1.0, Pure NODISC).
+[METRIC] round=14 test_accuracy=0.5739 matched_accuracy=0.5607 mismatched_accuracy=0.5872 train_accuracy=0.5414 round_epochs=10.0000
+[07:30:36] Round 15/50 finished (Matrix B, Epochs: 16, Ratio: 1.0, Pure NODISC).
+[METRIC] round=15 test_accuracy=0.5989 matched_accuracy=0.5895 mismatched_accuracy=0.6082 train_accuracy=0.4427 round_epochs=16.0000
+[08:05:07] Round 16/50 finished (Matrix A, Epochs: 9, Ratio: 1.0, Pure NODISC).
+[METRIC] round=16 test_accuracy=0.5744 matched_accuracy=0.5651 mismatched_accuracy=0.5838 train_accuracy=0.5314 round_epochs=9.0000
+[08:53:56] Round 17/50 finished (Matrix B, Epochs: 13, Ratio: 1.0, Pure NODISC).
+[METRIC] round=17 test_accuracy=0.6423 matched_accuracy=0.6343 mismatched_accuracy=0.6502 train_accuracy=0.5713 round_epochs=13.0000
+[09:31:55] Round 18/50 finished (Matrix A, Epochs: 10, Ratio: 1.0, Pure NODISC).
+[METRIC] round=18 test_accuracy=0.6114 matched_accuracy=0.6006 mismatched_accuracy=0.6223 train_accuracy=0.4841 round_epochs=10.0000
+[10:38:42] Round 19/50 finished (Matrix B, Epochs: 18, Ratio: 1.0, Pure NODISC).
+[METRIC] round=19 test_accuracy=0.6637 matched_accuracy=0.6531 mismatched_accuracy=0.6743 train_accuracy=0.6382 round_epochs=18.0000
+[11:31:14] Round 20/50 finished (Matrix A, Epochs: 14, Ratio: 1.0, Pure NODISC).
+[METRIC] round=20 test_accuracy=0.6880 matched_accuracy=0.6792 mismatched_accuracy=0.6969 train_accuracy=0.5955 round_epochs=14.0000
