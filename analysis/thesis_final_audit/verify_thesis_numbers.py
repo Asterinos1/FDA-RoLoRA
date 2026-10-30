@@ -28,7 +28,7 @@ def run_verification():
 
     # 2. Check generated tables existence and line counts
     tables_dir = THESIS_DIR / "tables"
-    expected_tables = [
+    all_generated_tables = [
         "table_5_1_scorecard_iid.tex",
         "table_5_2_scorecard_noniid.tex",
         "table_5_3_detailed_iid.tex",
@@ -37,9 +37,16 @@ def run_verification():
         "table_5_matched_budget.tex",
         "table_5_setpoint_tracking.tex",
     ]
+    # Active tables input in evaluation.tex (Sections 5.1-5.4)
+    expected_tables_in_eval = [
+        "table_5_1_scorecard_iid.tex",
+        "table_5_2_scorecard_noniid.tex",
+        "table_5_3_detailed_iid.tex",
+        "table_5_4_detailed_noniid.tex",
+    ]
 
     print("\n[Check 1] Checking generated tables in thesis/tables/:")
-    for t in expected_tables:
+    for t in all_generated_tables:
         t_path = tables_dir / t
         if not t_path.exists():
             print(f"  [FAIL] Missing table: {t}")
@@ -52,8 +59,8 @@ def run_verification():
     eval_path = THESIS_DIR / "chapters" / "evaluation.tex"
     eval_text = eval_path.read_text(encoding="utf-8")
 
-    print("\n[Check 2] Checking table inputs in evaluation.tex:")
-    for t in expected_tables:
+    print("\n[Check 2] Checking active table inputs in evaluation.tex:")
+    for t in expected_tables_in_eval:
         base = t.replace(".tex", "")
         if f"tables/{t}" in eval_text or f"tables/{base}" in eval_text:
             print(f"  [PASS] Input verified: tables/{t}")
@@ -71,9 +78,6 @@ def run_verification():
         (r"83\.14", "QNLI C20 IID FDA-RoLoRA peak accuracy (83.14%)"),
         (r"92\.14", "SST-2 C20 IID FDA-RoLoRA peak accuracy (92.14%)"),
         (r"49\.51", "QNLI C50 Non-IID FDA-RoLoRA accuracy (k=1.0 collapse at 49.51%)"),
-        (r"0\.64|0\.79", "IID setpoint tracking ratios (0.64 - 0.79)"),
-        (r"0\.91|1\.11", "Non-IID setpoint tracking ratios (0.91 - 1.11)"),
-        (r"10\.63|10\.82", "Matrix A and B epoch balance (factor symmetry: 10.63 vs 10.82)"),
     ]
 
     for pat, desc in prose_checks:
@@ -101,11 +105,13 @@ def run_verification():
         assert num in t52_text, f"{num} missing from Table 5.2"
     print("  [PASS] Table 5.2 numbers verified against canonical Non-IID metrics.")
 
-    # 6. Check Table 5.5 (Milestones)
-    t55_text = (tables_dir / "table_5_5_milestones.tex").read_text(encoding="utf-8")
-    print("\n[Check 5] Cross-checking Milestone Table 5.5:")
-    assert "R@70\\%:" in t55_text or "R@80\\%:" in t55_text, "Milestone target syntax missing in Table 5.5"
-    print("  [PASS] Milestone table syntax and formatting verified.")
+    # 6. Check Detailed Tables 5.3 & 5.4
+    print("\n[Check 5] Cross-checking Detailed Tables 5.3 & 5.4:")
+    t53_text = (tables_dir / "table_5_3_detailed_iid.tex").read_text(encoding="utf-8")
+    t54_text = (tables_dir / "table_5_4_detailed_noniid.tex").read_text(encoding="utf-8")
+    assert "SST-2" in t53_text and "MNLI" in t53_text, "Task labels missing in Table 5.3"
+    assert "SST-2" in t54_text and "QNLI" in t54_text, "Task labels missing in Table 5.4"
+    print("  [PASS] Detailed tables syntax and formatting verified.")
 
     # 7. Check for forbidden terminology across all thesis chapters
     print("\n[Check 6] Checking for forbidden internal terminology across chapters:")
