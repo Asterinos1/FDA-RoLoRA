@@ -1,0 +1,226 @@
+# Audit Diff: Complete Discrepancy Verification Across Chapter 5
+
+Comprehensive verification of every quantitative claim, table entry, and figure reference in Chapter 5 against the reference markdown (`FDA_Pure_vs_RoLoRA.md`) and raw per-round CSV files.
+
+### Status Definitions:
+
+- **OK**: Verified and supported by raw CSV recomputation.
+
+- **WRONG**: Factually contradicted by data, contaminated by aborted runs, or miscalculated.
+
+- **UNREPRODUCIBLE**: Cannot be reproduced or traced to existing CSV runs.
+
+- **MD-vs-CSV CONFLICT**: Discrepancy arising from `.md` averaging trajectories round-by-round before taking the peak, versus the thesis averaging individual per-seed peaks.
+
+
+| Item / Claim | Thesis Value | Reference MD Value | Recomputed CSV Value | Status | Detailed Explanation |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **Table 5.1 (Scorecard IID): MNLI C=20 E=10** | `76.6, 10.0, 131.3` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration mnli C=20 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): MNLI C=20 k=0.5 Peak Accuracy** | `76.45 ± 0.00%` | `76.44%` | `76.45 ± 0.17%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): MNLI C=20 k=0.5 Mean Epochs (e)** | `7.76` | `7.76` | `7.76` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): MNLI C=20 k=0.5 Total MB** | `192.2 MB` | `192.2 MB` | `192.2 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): MNLI C=20 k=1.0 Peak Accuracy** | `76.86 ± 0.00%` | `76.86%` | `76.86 ± 0.10%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): MNLI C=20 k=1.0 Mean Epochs (e)** | `13.42` | `13.42` | `13.42` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): MNLI C=20 k=1.0 Total MB** | `150.0 MB` | `150.0 MB` | `150.0 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 E=10** | `65.85, 10.0, 351.6` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration mnli C=50 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 k=0.5 Peak Accuracy** | `56.16 ± 0.00%` | `56.16%` | `56.16 ± 7.99%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 k=0.5 Mean Epochs (e)** | `7.22` | `7.22` | `7.22` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 k=0.5 Total MB** | `351.6 MB` | `351.6 MB` | `351.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 k=1.0 Peak Accuracy** | `69.85 ± 0.00%` | `69.85%` | `69.85 ± 3.37%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 k=1.0 Mean Epochs (e)** | `12.15` | `12.15` | `12.15` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): MNLI C=50 k=1.0 Total MB** | `351.6 MB` | `351.6 MB` | `351.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 E=10** | `81.83, 10.0, 46.9` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qnli C=20 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 k=0.5 Peak Accuracy** | `80.61 ± 0.00%` | `80.09%` | `80.61 ± 0.69%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 k=0.5 Mean Epochs (e)** | `6.91` | `6.91` | `6.91` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 k=0.5 Total MB** | `82.0 MB` | `82.0 MB` | `82.0 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 k=1.0 Peak Accuracy** | `83.14 ± 0.00%` | `79.10%` | `83.14 ± 0.34%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 k=1.0 Mean Epochs (e)** | `9.85` | `9.85` | `9.85` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QNLI C=20 k=1.0 Total MB** | `77.3 MB` | `77.3 MB` | `77.3 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 E=20** | `88.14, 20.0, 351.6` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qnli C=50 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 k=0.5 Peak Accuracy** | `80.96 ± 0.00%` | `80.86%` | `80.96 ± 0.18%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 k=0.5 Mean Epochs (e)** | `7.35` | `7.35` | `7.35` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 k=0.5 Total MB** | `304.7 MB` | `304.7 MB` | `304.7 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 k=1.0 Peak Accuracy** | `82.77 ± 0.00%` | `82.77%` | `82.77 ± 2.14%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 k=1.0 Mean Epochs (e)** | `10.89` | `10.89` | `10.89` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QNLI C=50 k=1.0 Total MB** | `246.1 MB` | `246.1 MB` | `246.1 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QQP C=20 E=10** | `75.47, 10.0, 30.5` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qqp C=20 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): QQP C=20 k=0.5 Peak Accuracy** | `74.17 ± 0.00%` | `74.17%` | `74.17 ± 1.12%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QQP C=20 k=0.5 Mean Epochs (e)** | `6.50` | `6.50` | `6.50` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QQP C=20 k=0.5 Total MB** | `65.6 MB` | `65.6 MB` | `65.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QQP C=20 k=1.0 Peak Accuracy** | `78.57 ± 0.00%` | `77.07%` | `78.57 ± 4.23%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QQP C=20 k=1.0 Mean Epochs (e)** | `10.69` | `10.69` | `10.69` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QQP C=20 k=1.0 Total MB** | `82.0 MB` | `82.0 MB` | `82.0 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QQP C=50 E=10** | `78.79, 10.0, 351.6` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qqp C=50 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): QQP C=50 k=0.5 Peak Accuracy** | `73.86 ± 0.00%` | `73.60%` | `73.86 ± 0.39%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QQP C=50 k=0.5 Mean Epochs (e)** | `6.25` | `6.25` | `6.25` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QQP C=50 k=0.5 Total MB** | `210.9 MB` | `210.9 MB` | `210.9 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): QQP C=50 k=1.0 Peak Accuracy** | `73.63 ± 0.00%` | `73.46%` | `73.63 ± 0.03%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): QQP C=50 k=1.0 Mean Epochs (e)** | `9.14` | `9.14` | `9.14` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): QQP C=50 k=1.0 Total MB** | `164.1 MB` | `164.1 MB` | `164.1 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 E=20** | `92.55, 20.0, 50.0` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration sst2 C=20 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 k=0.5 Peak Accuracy** | `88.88 ± 0.00%` | `87.67%` | `88.88 ± 3.73%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 k=0.5 Mean Epochs (e)** | `5.82` | `5.82` | `5.82` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 k=0.5 Total MB** | `82.0 MB` | `82.0 MB` | `49.2 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 82.0 MB); correct 3-layer payload (144 KB/round) is 49.2 MB. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 k=1.0 Peak Accuracy** | `92.14 ± 0.00%` | `91.80%` | `92.14 ± 0.24%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 k=1.0 Mean Epochs (e)** | `11.11` | `11.11` | `11.11` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): SST2 C=20 k=1.0 Total MB** | `96.1 MB` | `96.1 MB` | `57.7 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 96.1 MB); correct 3-layer payload (144 KB/round) is 57.7 MB. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 E=20** | `92.01, 20.0, 199.2` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration sst2 C=50 in benchmark suite. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 k=0.5 Peak Accuracy** | `87.44 ± 0.00%` | `86.81%` | `87.44 ± 3.16%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 k=0.5 Mean Epochs (e)** | `6.91` | `6.91` | `6.91` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 k=0.5 Total MB** | `293.0 MB` | `293.0 MB` | `175.8 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 293.0 MB); correct 3-layer payload (144 KB/round) is 175.8 MB. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 k=1.0 Peak Accuracy** | `89.68 ± 0.00%` | `89.68%` | `89.68 ± 1.14%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 k=1.0 Mean Epochs (e)** | `10.78` | `10.78` | `10.78` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.1 (Scorecard IID): SST2 C=50 k=1.0 Total MB** | `234.4 MB` | `234.4 MB` | `140.6 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 234.4 MB); correct 3-layer payload (144 KB/round) is 140.6 MB. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 E=10** | `74.24, 10.0, 234.4` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration mnli C=20 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 k=0.5 Peak Accuracy** | `73.25 ± 0.00%` | `73.80%` | `74.12 ± 0.93%` | **WRONG** | Thesis reports 73.25%, while CSV recomputation gives 74.12% (md gives 73.80%). |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 k=0.5 Mean Epochs (e)** | `10.07` | `19.06` | `19.06` | **WRONG** | Differs from recomputed epoch mean (19.06). |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 k=0.5 Total MB** | `192.2 MB` | `161.7 MB` | `161.7 MB` | **WRONG** | Differs from recomputed payload (161.7 MB). |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 k=1.0 Peak Accuracy** | `74.47 ± 0.00%` | `74.40%` | `74.47 ± 0.11%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 k=1.0 Mean Epochs (e)** | `17.49` | `17.49` | `17.49` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=20 k=1.0 Total MB** | `178.1 MB` | `178.1 MB` | `178.1 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 E=10** | `56.55, 10.0, 351.6` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration mnli C=50 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 k=0.5 Peak Accuracy** | `55.56 ± 0.00%` | `55.23%` | `55.56 ± 1.65%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 k=0.5 Mean Epochs (e)** | `10.13` | `10.13` | `10.13` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 k=0.5 Total MB** | `351.6 MB` | `351.6 MB` | `351.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 k=1.0 Peak Accuracy** | `54.95 ± 0.00%` | `51.46%` | `54.95 ± 3.53%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 k=1.0 Mean Epochs (e)** | `15.63` | `15.63` | `15.63` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): MNLI C=50 k=1.0 Total MB** | `263.7 MB` | `263.7 MB` | `263.7 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 E=10** | `83.5, 10.0, 154.7` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qnli C=20 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 k=0.5 Peak Accuracy** | `82.64 ± 0.00%` | `82.74%` | `83.48 ± 0.94%` | **WRONG** | Thesis reports 82.64%, while CSV recomputation gives 83.48% (md gives 82.74%). |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 k=0.5 Mean Epochs (e)** | `10.54` | `20.36` | `20.36` | **WRONG** | Differs from recomputed epoch mean (20.36). |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 k=0.5 Total MB** | `159.4 MB` | `112.5 MB` | `112.5 MB` | **WRONG** | Differs from recomputed payload (112.5 MB). |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 k=1.0 Peak Accuracy** | `84.22 ± 0.00%` | `82.55%` | `83.20 ± 0.18%` | **WRONG** | Thesis reports 84.22%, while CSV recomputation gives 83.20% (md gives 82.55%). |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 k=1.0 Mean Epochs (e)** | `16.73` | `29.83` | `29.83` | **WRONG** | Differs from recomputed epoch mean (29.83). |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=20 k=1.0 Total MB** | `124.2 MB` | `70.3 MB` | `70.3 MB` | **WRONG** | Differs from recomputed payload (70.3 MB). |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 E=10** | `74.61, 10.0, 351.6` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qnli C=50 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 k=0.5 Peak Accuracy** | `75.69 ± 0.00%` | `65.61%` | `75.69 ± 1.66%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 k=0.5 Mean Epochs (e)** | `10.48` | `10.48` | `10.48` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 k=0.5 Total MB** | `351.6 MB` | `351.6 MB` | `351.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 k=1.0 Peak Accuracy** | `73.52 ± 0.00%` | `73.52%` | `73.52 ± 4.31%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 k=1.0 Mean Epochs (e)** | `13.04` | `13.04` | `13.04` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): QNLI C=50 k=1.0 Total MB** | `152.3 MB` | `152.3 MB` | `152.3 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 E=10** | `77.69, 10.0, 77.3` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qqp C=20 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 k=0.5 Peak Accuracy** | `73.58 ± 0.00%` | `68.00%` | `73.58 ± 1.56%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 k=0.5 Mean Epochs (e)** | `10.87` | `10.87` | `10.87` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 k=0.5 Total MB** | `56.2 MB` | `56.2 MB` | `56.2 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 k=1.0 Peak Accuracy** | `77.88 ± 0.00%` | `77.88%` | `77.88 ± 0.66%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 k=1.0 Mean Epochs (e)** | `15.70` | `15.70` | `15.70` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=20 k=1.0 Total MB** | `65.6 MB` | `65.6 MB` | `65.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 E=10** | `74.71, 10.0, 263.7` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration qqp C=50 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 k=0.5 Peak Accuracy** | `72.71 ± 0.00%` | `71.21%` | `72.71 ± 3.23%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 k=0.5 Mean Epochs (e)** | `9.18` | `9.18` | `9.18` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 k=0.5 Total MB** | `181.6 MB` | `181.6 MB` | `181.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 k=1.0 Peak Accuracy** | `74.55 ± 0.00%` | `70.45%` | `74.55 ± 1.30%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 k=1.0 Mean Epochs (e)** | `14.26` | `14.26` | `14.26` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): QQP C=50 k=1.0 Total MB** | `181.6 MB` | `181.6 MB` | `181.6 MB` | **OK** | Matches round-only communication volume. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 E=10** | `89.62, 10.0, 117.2` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration sst2 C=20 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 k=0.5 Peak Accuracy** | `89.39 ± 0.00%` | `85.44%` | `89.39 ± 2.19%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 k=0.5 Mean Epochs (e)** | `9.69` | `9.69` | `9.69` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 k=0.5 Total MB** | `75.0 MB` | `75.0 MB` | `45.0 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 75.0 MB); correct 3-layer payload (144 KB/round) is 45.0 MB. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 k=1.0 Peak Accuracy** | `89.91 ± 0.00%` | `89.28%` | `89.91 ± 0.81%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 k=1.0 Mean Epochs (e)** | `14.43` | `14.43` | `14.43` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=20 k=1.0 Total MB** | `65.6 MB` | `65.6 MB` | `39.4 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 65.6 MB); correct 3-layer payload (144 KB/round) is 39.4 MB. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 E=10** | `59.0, 10.0, 234.4` | `N/A` | `N/A` | **UNREPRODUCIBLE** | Could not match configuration sst2 C=50 in benchmark suite. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 k=0.5 Peak Accuracy** | `67.37 ± 0.00%` | `66.46%` | `67.37 ± 23.27%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 k=0.5 Mean Epochs (e)** | `8.70` | `8.70` | `8.70` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 k=0.5 Total MB** | `234.4 MB` | `234.4 MB` | `140.6 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 234.4 MB); correct 3-layer payload (144 KB/round) is 140.6 MB. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 k=1.0 Peak Accuracy** | `85.95 ± 0.00%` | `84.86%` | `85.95 ± 5.60%` | **OK** | Matches per-seed peak mean exactly. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 k=1.0 Mean Epochs (e)** | `14.57` | `14.57` | `14.57` | **OK** | Matches recomputed CSV epoch mean. |
+| **Table 5.2 (Scorecard Non-IID): SST2 C=50 k=1.0 Total MB** | `234.4 MB` | `234.4 MB` | `140.6 MB (exact 144/240 KB)` | **WRONG** | Calculated using 5-layer payload (240 KB/round = 234.4 MB); correct 3-layer payload (144 KB/round) is 140.6 MB. |
+| **Table 5.3 (Detailed IID): MNLI C=20 k=0.5 Final Accuracy** | `76.44 ± 0.12%` | `76.44%` | `76.44 ± 0.18%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=20 k=0.5 Peak Accuracy** | `76.45 ± 0.12%` | `76.44%` | `76.45 ± 0.17%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=20 k=1.0 Final Accuracy** | `76.86 ± 0.07%` | `76.86%` | `76.86 ± 0.10%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=20 k=1.0 Peak Accuracy** | `76.86 ± 0.07%` | `76.86%` | `76.86 ± 0.10%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=50 k=0.5 Final Accuracy** | `56.16 ± 5.65%` | `56.16%` | `56.16 ± 7.99%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=50 k=0.5 Peak Accuracy** | `56.16 ± 5.65%` | `56.16%` | `56.16 ± 7.99%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=50 k=1.0 Final Accuracy** | `69.85 ± 2.38%` | `69.85%` | `69.85 ± 3.37%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): MNLI C=50 k=1.0 Peak Accuracy** | `69.85 ± 2.38%` | `69.85%` | `69.85 ± 3.37%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=20 k=0.5 Final Accuracy** | `65.28 ± 15.82%` | `65.28%` | `65.28 ± 22.37%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=20 k=0.5 Peak Accuracy** | `80.61 ± 0.49%` | `80.09%` | `80.61 ± 0.69%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=20 k=1.0 Final Accuracy** | `67.63 ± 15.75%` | `67.63%` | `67.63 ± 22.28%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=20 k=1.0 Peak Accuracy** | `83.14 ± 0.24%` | `79.10%` | `83.14 ± 0.34%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=50 k=0.5 Final Accuracy** | `80.75 ± 0.12%` | `80.75%` | `80.75 ± 0.17%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=50 k=0.5 Peak Accuracy** | `80.96 ± 0.13%` | `80.86%` | `80.96 ± 0.18%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=50 k=1.0 Final Accuracy** | `82.47 ± 1.22%` | `82.47%` | `82.47 ± 1.72%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QNLI C=50 k=1.0 Peak Accuracy** | `82.77 ± 1.51%` | `82.77%` | `82.77 ± 2.14%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=20 k=0.5 Final Accuracy** | `72.96 ± 0.58%` | `72.96%` | `72.96 ± 0.58%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=20 k=0.5 Peak Accuracy** | `74.17 ± 0.79%` | `74.17%` | `74.17 ± 1.12%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=20 k=1.0 Final Accuracy** | `76.34 ± 3.77%` | `76.34%` | `76.34 ± 5.33%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=20 k=1.0 Peak Accuracy** | `78.57 ± 2.99%` | `77.07%` | `78.57 ± 4.23%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=50 k=0.5 Final Accuracy** | `72.08 ± 0.20%` | `72.08%` | `72.08 ± 0.20%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=50 k=0.5 Peak Accuracy** | `73.86 ± 0.27%` | `73.60%` | `73.86 ± 0.39%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=50 k=1.0 Final Accuracy** | `72.65 ± 1.17%` | `72.65%` | `72.65 ± 1.17%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): QQP C=50 k=1.0 Peak Accuracy** | `73.63 ± 0.02%` | `73.46%` | `73.63 ± 0.03%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=20 k=0.5 Final Accuracy** | `87.61 ± 2.64%` | `87.61%` | `87.61 ± 5.35%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=20 k=0.5 Peak Accuracy** | `88.88 ± 2.64%` | `87.67%` | `88.88 ± 3.73%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=20 k=1.0 Final Accuracy** | `91.80 ± 0.17%` | `91.80%` | `91.80 ± 0.24%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=20 k=1.0 Peak Accuracy** | `92.14 ± 0.17%` | `91.80%` | `92.14 ± 0.24%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=50 k=0.5 Final Accuracy** | `86.81 ± 2.24%` | `86.81%` | `86.81 ± 4.05%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=50 k=0.5 Peak Accuracy** | `87.44 ± 2.24%` | `86.81%` | `87.44 ± 3.16%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=50 k=1.0 Final Accuracy** | `89.68 ± 0.80%` | `89.68%` | `89.68 ± 1.14%` | **OK** | Matches per-seed final accuracy mean. |
+| **Table 5.3 (Detailed IID): SST2 C=50 k=1.0 Peak Accuracy** | `89.68 ± 0.80%` | `89.68%` | `89.68 ± 1.14%` | **OK** | Matches per-seed peak accuracy mean. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Final Accuracy** | `74.24 ± 0.09%` | `73.70%` | `73.70 ± 0.34%` | **WRONG** | Thesis reports 74.24%, recomputed CSV gives 73.70%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Peak Accuracy** | `50.00 ± 0.00%` | `73.80%` | `74.12 ± 0.93%` | **WRONG** | Thesis reports 50.00%, recomputed gives 74.12%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Final Accuracy** | `73.31 ± 0.13%` | `73.70%` | `73.70 ± 0.34%` | **WRONG** | Thesis reports 73.31%, recomputed CSV gives 73.70%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Peak Accuracy** | `24.00 ± 5.70%` | `73.80%` | `74.12 ± 0.93%` | **WRONG** | Thesis reports 24.00%, recomputed gives 74.12%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Final Accuracy** | `73.25 ± 0.84%` | `73.70%` | `73.70 ± 0.34%` | **WRONG** | Thesis reports 73.25%, recomputed CSV gives 73.70%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Peak Accuracy** | `41.00 ± 7.10%` | `73.80%` | `74.12 ± 0.93%` | **WRONG** | Thesis reports 41.00%, recomputed gives 74.12%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Final Accuracy** | `74.47 ± 0.08%` | `73.70%` | `73.70 ± 0.34%` | **WRONG** | Thesis reports 74.47%, recomputed CSV gives 73.70%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Peak Accuracy** | `38.00 ± 4.20%` | `73.80%` | `74.12 ± 0.93%` | **WRONG** | Thesis reports 38.00%, recomputed gives 74.12%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Final Accuracy** | `74.12 ± 0.66%` | `73.70%` | `73.70 ± 0.34%` | **WRONG** | Thesis reports 74.12%, recomputed CSV gives 73.70%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=20  Peak Accuracy** | `34.50 ± 0.70%` | `73.80%` | `74.12 ± 0.93%` | **WRONG** | Thesis reports 34.50%, recomputed gives 74.12%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=50  Final Accuracy** | `56.55 ± 4.90%` | `51.46%` | `51.46 ± 8.46%` | **WRONG** | Thesis reports 56.55%, recomputed CSV gives 51.46%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=50  Peak Accuracy** | `30.00 ± 0.00%` | `51.46%` | `54.95 ± 3.53%` | **WRONG** | Thesis reports 30.00%, recomputed gives 54.95%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=50  Final Accuracy** | `55.56 ± 1.17%` | `51.46%` | `51.46 ± 8.46%` | **WRONG** | Thesis reports 55.56%, recomputed CSV gives 51.46%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=50  Peak Accuracy** | `30.00 ± 0.00%` | `51.46%` | `54.95 ± 3.53%` | **WRONG** | Thesis reports 30.00%, recomputed gives 54.95%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=50  Final Accuracy** | `54.95 ± 2.49%` | `51.46%` | `51.46 ± 8.46%` | **WRONG** | Thesis reports 54.95%, recomputed CSV gives 51.46%. |
+| **Table 5.4 (Detailed Non-IID): MNLI C=50  Peak Accuracy** | `22.50 ± 2.10%` | `51.46%` | `54.95 ± 3.53%` | **WRONG** | Thesis reports 22.50%, recomputed gives 54.95%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Final Accuracy** | `83.50 ± 1.18%` | `76.27%` | `76.27 ± 7.78%` | **WRONG** | Thesis reports 83.50%, recomputed CSV gives 76.27%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Peak Accuracy** | `33.00 ± 1.40%` | `82.55%` | `83.20 ± 0.18%` | **WRONG** | Thesis reports 33.00%, recomputed gives 83.20%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Final Accuracy** | `83.22 ± 0.10%` | `76.27%` | `76.27 ± 7.78%` | **WRONG** | Thesis reports 83.22%, recomputed CSV gives 76.27%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Peak Accuracy** | `19.00 ± 2.80%` | `82.55%` | `83.20 ± 0.18%` | **WRONG** | Thesis reports 19.00%, recomputed gives 83.20%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Final Accuracy** | `82.64 ± 1.86%` | `76.27%` | `76.27 ± 7.78%` | **WRONG** | Thesis reports 82.64%, recomputed CSV gives 76.27%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Peak Accuracy** | `34.00 ± 5.70%` | `82.55%` | `83.20 ± 0.18%` | **WRONG** | Thesis reports 34.00%, recomputed gives 83.20%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Final Accuracy** | `84.22 ± 0.29%` | `76.27%` | `76.27 ± 7.78%` | **WRONG** | Thesis reports 84.22%, recomputed CSV gives 76.27%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Peak Accuracy** | `26.50 ± 7.80%` | `82.55%` | `83.20 ± 0.18%` | **WRONG** | Thesis reports 26.50%, recomputed gives 83.20%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Final Accuracy** | `83.48 ± 0.67%` | `76.27%` | `76.27 ± 7.78%` | **WRONG** | Thesis reports 83.48%, recomputed CSV gives 76.27%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=20  Peak Accuracy** | `24.00 ± 8.50%` | `82.55%` | `83.20 ± 0.18%` | **WRONG** | Thesis reports 24.00%, recomputed gives 83.20%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=50  Final Accuracy** | `74.61 ± 7.18%` | `49.51%` | `49.51 ± 0.08%` | **WRONG** | Thesis reports 74.61%, recomputed CSV gives 49.51%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=50  Peak Accuracy** | `30.00 ± 0.00%` | `73.52%` | `73.52 ± 4.31%` | **WRONG** | Thesis reports 30.00%, recomputed gives 73.52%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=50  Final Accuracy** | `75.69 ± 1.17%` | `49.51%` | `49.51 ± 0.08%` | **WRONG** | Thesis reports 75.69%, recomputed CSV gives 49.51%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=50  Peak Accuracy** | `30.00 ± 0.00%` | `73.52%` | `73.52 ± 4.31%` | **WRONG** | Thesis reports 30.00%, recomputed gives 73.52%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=50  Final Accuracy** | `73.52 ± 3.05%` | `49.51%` | `49.51 ± 0.08%` | **WRONG** | Thesis reports 73.52%, recomputed CSV gives 49.51%. |
+| **Table 5.4 (Detailed Non-IID): QNLI C=50  Peak Accuracy** | `13.00 ± 0.00%` | `73.52%` | `73.52 ± 4.31%` | **WRONG** | Thesis reports 13.00%, recomputed gives 73.52%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=20  Final Accuracy** | `77.69 ± 1.54%` | `64.52%` | `64.52 ± 18.23%` | **WRONG** | Thesis reports 77.69%, recomputed CSV gives 64.52%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=20  Peak Accuracy** | `16.50 ± 0.70%` | `77.88%` | `77.88 ± 0.66%` | **WRONG** | Thesis reports 16.50%, recomputed gives 77.88%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=20  Final Accuracy** | `73.58 ± 1.10%` | `64.52%` | `64.52 ± 18.23%` | **WRONG** | Thesis reports 73.58%, recomputed CSV gives 64.52%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=20  Peak Accuracy** | `12.00 ± 4.20%` | `77.88%` | `77.88 ± 0.66%` | **WRONG** | Thesis reports 12.00%, recomputed gives 77.88%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=20  Final Accuracy** | `77.88 ± 0.46%` | `64.52%` | `64.52 ± 18.23%` | **WRONG** | Thesis reports 77.88%, recomputed CSV gives 64.52%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=20  Peak Accuracy** | `14.00 ± 2.80%` | `77.88%` | `77.88 ± 0.66%` | **WRONG** | Thesis reports 14.00%, recomputed gives 77.88%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=50  Final Accuracy** | `74.71 ± 1.15%` | `57.45%` | `57.45 ± 11.29%` | **WRONG** | Thesis reports 74.71%, recomputed CSV gives 57.45%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=50  Peak Accuracy** | `22.50 ± 2.10%` | `70.45%` | `74.55 ± 1.30%` | **WRONG** | Thesis reports 22.50%, recomputed gives 74.55%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=50  Final Accuracy** | `72.71 ± 2.29%` | `57.45%` | `57.45 ± 11.29%` | **WRONG** | Thesis reports 72.71%, recomputed CSV gives 57.45%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=50  Peak Accuracy** | `15.50 ± 4.90%` | `70.45%` | `74.55 ± 1.30%` | **WRONG** | Thesis reports 15.50%, recomputed gives 74.55%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=50  Final Accuracy** | `74.55 ± 0.92%` | `57.45%` | `57.45 ± 11.29%` | **WRONG** | Thesis reports 74.55%, recomputed CSV gives 57.45%. |
+| **Table 5.4 (Detailed Non-IID): QQP C=50  Peak Accuracy** | `15.50 ± 3.50%` | `70.45%` | `74.55 ± 1.30%` | **WRONG** | Thesis reports 15.50%, recomputed gives 74.55%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=20  Final Accuracy** | `89.62 ± 1.32%` | `69.72%` | `69.72 ± 29.19%` | **WRONG** | Thesis reports 89.62%, recomputed CSV gives 69.72%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=20  Peak Accuracy** | `25.00 ± 0.00%` | `89.28%` | `89.91 ± 0.81%` | **WRONG** | Thesis reports 25.00%, recomputed gives 89.91%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=20  Final Accuracy** | `89.39 ± 1.55%` | `69.72%` | `69.72 ± 29.19%` | **WRONG** | Thesis reports 89.39%, recomputed CSV gives 69.72%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=20  Peak Accuracy** | `16.00 ± 2.80%` | `89.28%` | `89.91 ± 0.81%` | **WRONG** | Thesis reports 16.00%, recomputed gives 89.91%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=20  Final Accuracy** | `89.91 ± 0.57%` | `69.72%` | `69.72 ± 29.19%` | **WRONG** | Thesis reports 89.91%, recomputed CSV gives 69.72%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=20  Peak Accuracy** | `14.00 ± 0.00%` | `89.28%` | `89.91 ± 0.81%` | **WRONG** | Thesis reports 14.00%, recomputed gives 89.91%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=50  Final Accuracy** | `59.00 ± 7.86%` | `81.36%` | `81.36 ± 9.97%` | **WRONG** | Thesis reports 59.00%, recomputed CSV gives 81.36%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=50  Peak Accuracy** | `20.00 ± 0.00%` | `84.86%` | `85.95 ± 5.60%` | **WRONG** | Thesis reports 20.00%, recomputed gives 85.95%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=50  Final Accuracy** | `67.37 ± 16.46%` | `81.36%` | `81.36 ± 9.97%` | **WRONG** | Thesis reports 67.37%, recomputed CSV gives 81.36%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=50  Peak Accuracy** | `20.00 ± 0.00%` | `84.86%` | `85.95 ± 5.60%` | **WRONG** | Thesis reports 20.00%, recomputed gives 85.95%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=50  Final Accuracy** | `85.95 ± 3.96%` | `81.36%` | `81.36 ± 9.97%` | **WRONG** | Thesis reports 85.95%, recomputed CSV gives 81.36%. |
+| **Table 5.4 (Detailed Non-IID): SST2 C=50  Peak Accuracy** | `20.00 ± 0.00%` | `84.86%` | `85.95 ± 5.60%` | **WRONG** | Thesis reports 20.00%, recomputed gives 85.95%. |
+| **Table 5.5: QNLI C=20 IID FDA-RoLoRA R@80% Gate** | `--- (Unattained)` | `— (Unattained)` | `Seed 42 peaked at 82.90%, Seed 43 peaked at 83.38% (Mean Peak: 83.14 ± 0.24%)` | **MD-vs-CSV CONFLICT** | Table 5.5 reports R@80% as unattained (---) because update_benchmark_suite.py pads shorter runs with their final value (Seed 42 ended at round 14 with acc=51.88%), dragging down the seed-averaged trajectory to a peak of 79.10%, even though both seeds individually crossed 80%. |
+| **Prose Section 5.5: Non-IID Truncation to 2.5-3.8 Epochs** | `ē ≈ 2.5--3.8 epochs` | `Mean epochs 9.18--17.49` | `Mean epochs range from 8.40 to 17.76 across all Non-IID FDA cells` | **WRONG** | Factually incorrect: the controller never truncates local training to 2.5-3.8 epochs under Non-IID. All Non-IID FDA runs execute between 8.4 and 17.8 epochs on average. |
+| **Figure 5.13: Dual Frontier Realized Epochs Curve** | `IID ē high (~4.2) and Non-IID ē low (~1.5)` | `Non-IID ē > IID ē in all 16 comparisons` | `Non-IID ē is strictly higher than IID ē for the same k in all 16 task/cohort pairs` | **WRONG** | Figure 5.13 and its accompanying text depict the exact reverse of empirical reality. In actual data, non-IID variance is roughly stationary and tracks the setpoint, while IID variance grows super-linearly and undershoots. |
+| **Prose Section 5.3: QNLI Variance Surge Claim** | `Variance surges 4.0× (0.448 → 1.794 on QNLI)` | `IID k=0.5 var=0.448, Non-IID k=0.5 var=1.794` | `0.448 (IID C20 k=0.5) vs 1.794 (Non-IID C20 k=0.5)` | **OK** | Numerical values exist in the data (comparing k=0.5 IID vs Non-IID), but the prose falsely concluded that this surge caused a 2.5-3.8 epoch brake. |
+| **Prose Section 5.4: Up-Projection B Deeper Training Claim** | `Matrix B consistently accommodates deeper training (17.76 vs 17.19)` | `17.76 vs 17.19 on MNLI C20 Non-IID only` | `In 16 out of 35 FDA cells, ea > eb. The difference on MNLI C20 (0.57 epochs) is within seed noise.` | **WRONG** | Overgeneralized from a single seed pair: across the benchmark suite, 16 of 35 cells have ea > eb, and both tracks symmetrically oscillate around the common setpoint. |
+| **Prose Section 5.1 & 5.3: QNLI C50 Non-IID 56.6% Bandwidth Savings Claim** | `Reaches early stopping in 13.0 rounds (152.3 MB) vs 30.0 rounds (351.6 MB) -> 56.6% bandwidth cut` | `FDA final accuracy 49.51% (aborted early due to degradation)` | `FDA k=1.0 terminated at round 13 with final accuracy 49.51% (chance level / failure)` | **WRONG** | Spurious savings claim: the run ended at round 13 because it degraded to coin-flip accuracy (49.51%), tripping early stopping. Savings cannot be claimed from an unsuccessful run. |
+| **Prose Section 5.3: SST-2 C50 Non-IID RoLoRA 'Collapse' Claim** | `suffers majority-class collapse, dropping to 59.00% peak accuracy (53.33% final)` | `RoLoRA accuracy stayed at 49.1%-51.1% throughout, with brief blip to 66.9% at round 19` | `RoLoRA never escaped the initial majority-class plateau (49-51%) within the 20-round budget` | **WRONG** | RoLoRA did not collapse from a trained state; it failed to break out of the initial majority-class saddle point within R=20. Wording must be corrected to 'did not escape initial plateau within budget'. |
+| **Figures 5.11 & 5.12 Caption & Prose: '4-task synthesis'** | `Figure 5.11 & 5.12 describe a '4-task diagnostic synthesis'` | `Plots show only MNLI and QNLI` | `Plots contain panels for MNLI and QNLI only (2 tasks)` | **WRONG** | Figures 5.11 and 5.12 only plot MNLI and QNLI, but the captions and Section 5.3 refer to them as a 'holistic 4-task diagnostic synthesis'. |
+| **Figures 5.1--5.8: IID Benchmark Stacked Figures** | `Legends show FDA-RoLoRA with parameters E3TO20, E3TO30, E3TO40, and RK8` | `Older fda-standard runs` | `Figures 5.1--5.8 were generated from pre-Pure standard FDA runs rather than FDA Pure (e_min=1, RK4)` | **WRONG** | Figures 5.1--5.8 visualize older fda-standard experiments rather than the finalized FDA-RoLoRA (Pure) method evaluated in the tables. |
