@@ -127,7 +127,7 @@ for t_name, ds, settings in tasks_iid:
 lines_5_1.extend([
     r"\end{tabular}",
     r"}",
-    r"\caption{Standard IID Evaluation ($\alpha=1000$): Comparison of RoLoRA and proposed FDA-RoLoRA across GLUE benchmarks. Bold values denote the top accuracy per setting; underlined values denote competitive baselines. All values reflect exact multi-seed means and sample standard deviations from raw run metrics with 3-layer corrected SST-2 payload accounting.}",
+    r"\caption{Standard IID Evaluation ($\alpha=1000$): RoLoRA vs.\ FDA-RoLoRA across GLUE benchmarks.}",
     r"\label{tab:scorecard_iid}",
     r"\end{table}"
 ])
@@ -201,7 +201,7 @@ for t_name, ds, settings in tasks_noniid:
 lines_5_2.extend([
     r"\end{tabular}",
     r"}",
-    r"\caption{Non-IID Evaluation ($\alpha=0.5$): Benchmark performance under severe Dirichlet label skew across GLUE tasks. Bold values indicate top accuracy per setting; underlined values indicate competitive baselines. Excludes the corrupted 4-round MNLI artifact, reflecting true completed multi-seed trajectories.}",
+    r"\caption{Non-IID Evaluation ($\alpha=0.5$): RoLoRA vs.\ FDA-RoLoRA across GLUE benchmarks under Dirichlet label skew.}",
     r"\label{tab:scorecard_non_iid}",
     r"\end{table}"
 ])
