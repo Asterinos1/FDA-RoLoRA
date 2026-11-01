@@ -22,16 +22,15 @@ This repository contains the official codebase and experimental evaluation for m
 
 ## Abstract
 
-Federated Learning (FL) has established itself as a foundational paradigm for privacy-preserving collaborative model training across decentralized data sources. However, scaling modern foundation models to billions of parameters exposes a critical dual bottleneck in federated optimization: an excessive *spatial* communication overhead from transmitting high-dimensional parameter updates, and an inefficient *temporal* communication pattern imposed by rigid, fixed-interval synchronization schedules. Parameter-efficient fine-tuning methods such as Low-Rank Adaptation (LoRA) address the spatial dimension by decomposing updates into compact low-rank factors. Yet, naively applying LoRA in federated environments introduces a fundamental structural inconsistency: independent averaging of constituent low-rank matrices fails to reconstruct the true global update due to the non-commutativity of matrix multiplication. Furthermore, existing federated LoRA variants remain temporally inefficient by relying on static synchronization frequencies agnostic to local training dynamics.
+Federated Learning has established itself as a foundational paradigm for privacy-preserving collaborative model training across decentralized data sources. However, scaling modern foundation models to billions of parameters exposes a critical dual bottleneck in federated optimization: an excessive *spatial* communication overhead from transmitting high-dimensional parameter updates, and an inefficient *temporal* communication pattern imposed by rigid, fixed-interval synchronization schedules. Parameter-efficient fine-tuning methods such as Low-Rank Adaptation address the spatial dimension by decomposing updates into compact low-rank factors. Yet, naively applying Low-Rank Adaptation in federated environments introduces a fundamental structural inconsistency: independent averaging of constituent low-rank matrices fails to reconstruct the true global update due to the non-commutativity of matrix multiplication. Furthermore, existing federated Low-Rank Adaptation variants remain temporally inefficient by relying on static synchronization frequencies agnostic to local training dynamics.
 
-To address both dimensions simultaneously, this thesis presents the **FDA-RoLoRA Dual Track** framework, a principled integration of Federated Dynamic Averaging (FDA) within a Robust Low-Rank Adaptation (RoLoRA) protocol. The proposed architecture enforces coordinate-space invariance through isolated alternating aggregation of down-projection ($\mathbf{A}$) and up-projection ($\mathbf{B}$) matrices, eliminating geometric cross-contamination while maintaining strict aggregation linearity. Concurrently, the framework introduces an adaptive, variance-driven synchronization mechanism governed by independent per-matrix thresholds ($\Theta_A, \Theta_B$), combined with a calibrated setpoint ratio ($\kappa = 1.0$) and Matrix $\mathbf{B}$ variance discounting ($\gamma = 3.0$) to counteract low-rank curvature penalties and premature braking. The framework is extensively evaluated on standard GLUE benchmarks using RoBERTa-base architectures under non-IID data partitioning against FedAvg+LoRA, FedOpt+LoRA, and fixed-schedule RoLoRA baselines to quantify the trade-offs between communication efficiency, convergence stability, and task performance.
-
+To address both dimensions simultaneously, this thesis investigates combining Federated Dynamic Averaging with federated low-rank adaptation. Specifically, we develop and formulate FDA-RoLoRA, an algorithmic formulation that pairs dynamic, variance-driven averaging with Robust Low-Rank Adaptation. This method eliminates the bilinear aggregation inconsistency through alternating updates between down-projection and up-projection matrices, while dynamically regulating synchronization frequency via decoupled, dynamically updated per-matrix variance thresholds. We evaluate the proposed framework on the General Language Understanding Evaluation (GLUE) benchmark using the `roberta-base` model.
 ---
 
 ## Acknowledgments & Prior Work
 
 **FDA-RoLoRA** represents the principled combination and extension of two brilliant works in federated optimization and parameter-efficient fine-tuning:
-- **[RoLoRA](https://arxiv.org/abs/2502.01755)** (*Sun et al., 2025*): Resolves low-rank aggregation inconsistency by alternating updates between down-projection ($\mathbf{A}$) and up-projection ($\mathbf{B}$) matrices.
+- **[RoLoRA](https://arxiv.org/abs/2502.01755)** (*Chen et al., 2025*): Resolves low-rank aggregation inconsistency by alternating updates between down-projection ($\mathbf{A}$) and up-projection ($\mathbf{B}$) matrices.
 - **[FDA-Opt](https://arxiv.org/abs/2505.04535)** (*Theologitis et al., 2025*): Replaces fixed synchronization rounds with adaptive, variance-driven communication thresholds.
 
 This repository directly expands upon the open-source implementation from the [FDA-Opt repository](https://github.com/michaeltheologitis/FDA-Opt) by [Michail Theologitis](https://github.com/michaeltheologitis).
@@ -55,22 +54,27 @@ FDA-LoRA/
 │   ├── metrics/mentrics_handler.py        # Per-round telemetry logging & metric tracking
 │   ├── models/                            # Model wrappers (PEFT LoRA, toy models, tensor ops)
 │   └── training/                          # Federated trainers (FedAvg, RoLoRA, FDA-Opt variants)
-├── fixed_calibration/                     # Authoritative calibrated dual-track controller
-│   └── fda_rolora_dual_track_calibrated.py# Calibrated trainer with configurable ratio (kappa) & B-discounting
-├── threshold_controller_experiments/      # Standalone HPC & cluster orchestration module
-│   ├── run_threshold_experiments.py       # Staged execution runner (RoLoRA -> FDA k=0.5 -> FDA k=1.0)
-│   ├── run_threshold_experiments.sh       # Multi-GPU asynchronous worker script
-│   └── README.md                          # Dedicated execution & cluster guide
+├── run_thesis_suite.py                    # Unified master benchmark scheduler & suite runner (pure, calib, non_iid, master, fillers, threshold, toy)
+├── run_thesis_suite.sh                    # Unified multi-GPU cluster launch script
+├── thesis_experiments.py                  # Master experimental configuration & dispatch engine
 ├── figures/                               # Publication-ready plots, loss curves & threshold telemetry
 ├── results/round_metrics/                 # Complete raw CSV per-round telemetry logs across all runs
+├── scripts/                               # Visualization, plotting, and report generation utilities
+│   ├── export_individual_plots.py         # Multi-method composite & individual telemetry figure exporter
+│   ├── export_standalone_figures.py       # Standalone sub-figure collector (224 metric plots)
+│   ├── update_benchmark_suite.py          # Benchmark scorecards and markdown table compilation engine
+│   └── visualize_metrics.py               # Interactive CLI terminal telemetry exploration tool
+├── analysis/                              # Post-hoc experimental analyses and assessments
+│   ├── analyze_toy_tradeoffs.py           # MNIST toy model compute vs. communication tradeoff analysis
+│   ├── assess_runs.py                     # Metric extraction & LLM summary builder
+│   ├── FDA_RESULTS_ANALYSIS.md            # High-level qualitative findings and thesis defense positioning
+│   └── FDA_vs_Baselines_Evaluation_Assessment.md # Narrative assessment of multi-task baseline evaluations
+├── docs/                                  # Documentation and historical artifacts
+│   └── ARIS-FDA-LoRA_AI_BUNDLE.md         # Reference snapshot from ARIS GPU server
 ├── sources/                               # Reference papers & technical notes (FDA-Opt, RoLoRA, FFA-LoRA)
-├── FDA_vs_Baselines_v2.md                 # Master head-to-head evaluation scorecard & mathematical analysis
-├── FDA_vs_Baselines_Evaluation_Assessment.md # Consolidated multi-task experimental evaluation
-├── key_contrast_summary.txt               # Plain-text paradigm contrast summary (FDA-Opt vs RoLoRA vs FDA)
-├── thesis_experiments.py                  # Master experimental configuration & dispatch engine
-├── export_individual_plots.py             # High-resolution standalone and matrix figure exporter
-├── requirements.txt                       # Local environment dependencies
-└── requirements_server.txt                # Cluster / HPC dependencies (PyTorch, Transformers, PEFT)
+├── FDA_Pure_vs_RoLoRA.md                  # Direct architectural benchmark: FDA Pure vs. RoLoRA (173 runs)
+├── FDA_Pure_vs_Baselines.md               # Extended benchmark: FDA Pure vs. RoLoRA, LoRA, FFA-LoRA
+└── FDA_vs_Baselines_v2.md                 # Master head-to-head evaluation scorecard & mathematical analysis
 ```
 
 ---

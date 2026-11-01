@@ -6,7 +6,7 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fdaopt import utils
-from pure_experiments.fda_rolora_pure import fda_rolora_dual_track_pure_opt
+from fdaopt.training.fda_opt import fda_rolora_dual_track_pure_opt
 
 def test():
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'

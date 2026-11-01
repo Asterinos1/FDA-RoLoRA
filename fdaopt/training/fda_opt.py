@@ -166,82 +166,6 @@ def fda_opt(hyperparams: Dict[str, Any]):
     metrics_handler.save_metrics()
 
 
-@torch.no_grad()
-def compute_effective_variance_and_norm(
-    model: torch.nn.Module,
-    client_drifts: Dict[int, list],
-    active_matrix: str,
-    lora_r: int
-) -> Tuple[float, float, float, float]:
-    """
-    Compute exact variance and L2-norm in the full effective weight space (W = A @ B).
-
-    Maps active factor drifts (Delta_A or Delta_B) through the frozen conjugate factor
-    to measure true drift variance in the reconstituted weight matrix space.
-
-    Args:
-        model (torch.nn.Module): PEFT model containing LoRA layers.
-        client_drifts (dict): Map of client IDs to lists of drift tensors.
-        active_matrix (str): 'A' or 'B'.
-        lora_r (int): LoRA rank dimension.
-
-    Returns:
-        tuple: (variance, update_l2_norm, avg_norm_sq_drifts, norm_sq_avg_drift)
-    """
-    num_clients = len(client_drifts)
-    sampled_clients = list(client_drifts.keys())
-    client_sq_norms = {client_id: 0.0 for client_id in sampled_clients}
-    norm_sq_avg_drift = 0.0
-
-    active_names_lora = [n for n, p in model.named_parameters() if f'lora_{active_matrix}' in n and p.requires_grad]
-    active_names_other = [n for n, p in model.named_parameters() if 'lora_' not in n and p.requires_grad]
-    ordered_active_names = active_names_lora + active_names_other
-    model_named_params = dict(model.named_parameters())
-
-    for active_param_idx, name in enumerate(ordered_active_names):
-        param = model_named_params[name]
-        is_lora = 'lora_' in name
-
-        if is_lora:
-            frozen_matrix_name = name.replace(f'lora_{active_matrix}', 'lora_B' if active_matrix == 'A' else 'lora_A')
-            frozen_param = model_named_params[frozen_matrix_name].to(utils.DEVICE)
-            is_transposed = param.shape[0] != lora_r if active_matrix == 'A' else frozen_param.shape[0] != lora_r
-
-            layer_drift_sum = None
-            for client_id in sampled_clients:
-                delta_active = client_drifts[client_id][active_param_idx].to(utils.DEVICE)
-                if is_transposed:
-                    delta_W = (delta_active @ frozen_param) if active_matrix == 'A' else (frozen_param @ delta_active)
-                else:
-                    delta_W = (frozen_param @ delta_active) if active_matrix == 'A' else (delta_active @ frozen_param)
-
-                client_sq_norms[client_id] += torch.sum(delta_W ** 2).item()
-                if layer_drift_sum is None:
-                    layer_drift_sum = delta_W.clone()
-                else:
-                    layer_drift_sum += delta_W
-
-            layer_avg_drift = layer_drift_sum / num_clients
-            norm_sq_avg_drift += torch.sum(layer_avg_drift ** 2).item()
-        else:
-            layer_drift_sum = None
-            for client_id in sampled_clients:
-                delta_other = client_drifts[client_id][active_param_idx].to(utils.DEVICE)
-                client_sq_norms[client_id] += torch.sum(delta_other ** 2).item()
-                if layer_drift_sum is None:
-                    layer_drift_sum = delta_other.clone()
-                else:
-                    layer_drift_sum += delta_other
-
-            layer_avg_drift = layer_drift_sum / num_clients
-            norm_sq_avg_drift += torch.sum(layer_avg_drift ** 2).item()
-
-    avg_norm_sq_drifts = sum(client_sq_norms.values()) / num_clients
-    effective_variance = max(0.0, avg_norm_sq_drifts - norm_sq_avg_drift)
-    update_l2_norm = math.sqrt(norm_sq_avg_drift)
-    return effective_variance, update_l2_norm, avg_norm_sq_drifts, norm_sq_avg_drift
-
-
 def toggle_rolora_matrices(model: torch.nn.Module, active_matrix: str):
     """
     Dynamically freeze/unfreeze LoRA A and B factor matrices.
@@ -1208,3 +1132,196 @@ def fda_rolora_dual_track_sma_opt(hyperparams: Dict[str, Any]):
             break
 
     metrics_handler.save_metrics()
+
+
+
+def fda_rolora_dual_track_pure_opt(hyperparams: Dict[str, Any]) -> None:
+    """
+    Execute Dual-Track FDA-RoLoRA (Pure / Calibrated Closed-Loop Optimizer).
+
+    Unified implementation supporting both pure variance and calibrated setpoints:
+      - Starts with Matrix B on Round 1 by default (`start_matrix='B'`).
+      - Adaptive controller ratio setpoint: `target_epochs = controller_ratio * e_max`.
+      - Natural cold-start bootstrap from Theta=0.0 (or optional first_round_guard).
+      - Dynamic bounds [e_min, e_max] with optional Matrix B variance discounting.
+      - Full metric logging and early stopping integration.
+
+    Args:
+        hyperparams (dict): Experiment configuration dictionary.
+    """
+    e_min = int(hyperparams.get('e_min', 1))
+    e_max = int(hyperparams.get('max_epochs', 20))
+    controller_ratio = float(hyperparams.get('controller_ratio', 1.0))
+    enable_b_discount = bool(hyperparams.get('enable_b_discount', False))
+    b_discount_factor = float(hyperparams.get('b_discount_factor', 3.0))
+    start_matrix = hyperparams.get('start_matrix', 'B')
+    first_round_guard = bool(hyperparams.get('first_round_guard', False))
+    method_name = hyperparams.get('METHOD_NAME', hyperparams.get('method', 'FDA-RoLoRA-DualTrack-Pure'))
+
+    fed_ds, test_ds = prepare_federated_datasets(
+        hyperparams['ds_path'], hyperparams['ds_name'], hyperparams['checkpoint'],
+        hyperparams['num_clients'], hyperparams['alpha'], hyperparams['batch_size'],
+        hyperparams.get('num_workers', 4), hyperparams.get('pin_memory', True)
+    )
+
+    if hyperparams.get('ds_name') == 'mnist':
+        from fdaopt.models.toy_model import ToyModel
+        model = ToyModel(rank=hyperparams.get('lora_r', 8)).to(utils.DEVICE)
+    else:
+        base_model = AutoModelForSequenceClassification.from_pretrained(
+            hyperparams['checkpoint'], num_labels=hyperparams['num_labels']
+        )
+        peft_config = LoraConfig(
+            task_type=TaskType.SEQ_CLS, inference_mode=False,
+            r=hyperparams.get('lora_r', 8), lora_alpha=hyperparams.get('lora_alpha', 16),
+            lora_dropout=0.1, target_modules=hyperparams.get('target_modules', None)
+        )
+        model = get_peft_model(base_model, peft_config).to(utils.DEVICE)
+        if not hyperparams.get('train_head', True):
+            for name, param in model.named_parameters():
+                if 'lora_' not in name:
+                    param.requires_grad = False
+
+    params_A = [p for n, p in model.named_parameters() if 'lora_A' in n and p.requires_grad]
+    params_B = [p for n, p in model.named_parameters() if 'lora_B' in n and p.requires_grad]
+    params_other = [p for n, p in model.named_parameters() if 'lora_' not in n and p.requires_grad]
+    num_lora = len(params_A)
+    params_A = params_A + params_other
+    params_B = params_B + params_other
+
+    server_opt_A, _ = server_client_optimizers(params_A, hyperparams, num_lora_params=num_lora)
+    server_opt_B, _ = server_client_optimizers(params_B, hyperparams, num_lora_params=num_lora)
+
+    client_sampler = ClientSampler(list(range(hyperparams['num_clients'])), hyperparams['clients_per_round'])
+    client_dict_A = {c_id: [p.detach().clone().to(get_save_device()) for p in params_A] for c_id in range(hyperparams['num_clients'])}
+    client_dict_B = {c_id: [p.detach().clone().to(get_save_device()) for p in params_B] for c_id in range(hyperparams['num_clients'])}
+
+    metrics_handler = MetricsHandler(hyperparams)
+    theta_A = float(hyperparams.get('theta', 0.0))
+    theta_B = float(hyperparams.get('theta', 0.0))
+    first_round_A = True
+    first_round_B = True
+
+    for r in range(hyperparams['total_rounds']):
+        round_start_time = time.time()
+        if start_matrix == 'B':
+            active_matrix = 'B' if r % 2 == 0 else 'A'
+        else:
+            active_matrix = 'A' if r % 2 == 0 else 'B'
+
+        toggle_rolora_matrices(model, active_matrix)
+
+        active_params = params_A if active_matrix == 'A' else params_B
+        active_server_opt = server_opt_A if active_matrix == 'A' else server_opt_B
+        active_client_dict = client_dict_A if active_matrix == 'A' else client_dict_B
+
+        current_theta = theta_A if active_matrix == 'A' else theta_B
+        is_first_round = first_round_A if active_matrix == 'A' else first_round_B
+
+        round_start_active_params = [param.detach().clone() for param in active_params]
+        sampled_clients = client_sampler.sample()
+        active_client_dict = get_updated_client_parameters(active_client_dict, sampled_clients, round_start_active_params)
+        round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
+
+        training_loss = 0.0
+        training_accuracy = 0.0
+        var_subspace = 0.0
+        effective_variance = 0.0
+        avg_norm_sq_drifts = 0.0
+        norm_sq_avg_drift = 0.0
+        round_epochs = 0
+
+        train_start = time.time()
+        while True:
+            round_epochs += 1
+            for client_id in sampled_clients:
+                _, client_opt = server_client_optimizers(active_params, hyperparams, num_lora_params=num_lora)
+                loss, acc = client_round_train(model, active_params, active_client_dict, client_opt, fed_ds, client_id, round_steps)
+                training_loss += loss
+                training_accuracy += acc
+
+            if round_epochs >= e_min:
+                sampled_active_client_dict = {c_id: active_client_dict[c_id] for c_id in sampled_clients}
+                client_drifts = compute_client_drifts(round_start_active_params, sampled_active_client_dict)
+                var_subspace, avg_norm_sq_drifts, norm_sq_avg_drift = variance(client_drifts)
+
+                if first_round_guard and is_first_round:
+                    if active_matrix == 'A':
+                        first_round_A = False
+                    else:
+                        first_round_B = False
+                    break
+
+                if enable_b_discount and active_matrix == 'B':
+                    effective_variance = var_subspace / b_discount_factor
+                else:
+                    effective_variance = var_subspace
+
+                if effective_variance > current_theta or round_epochs >= e_max:
+                    break
+            elif round_epochs >= e_max:
+                sampled_active_client_dict = {c_id: active_client_dict[c_id] for c_id in sampled_clients}
+                client_drifts = compute_client_drifts(round_start_active_params, sampled_active_client_dict)
+                var_subspace, avg_norm_sq_drifts, norm_sq_avg_drift = variance(client_drifts)
+                effective_variance = var_subspace / b_discount_factor if (enable_b_discount and active_matrix == 'B') else var_subspace
+                break
+
+        train_end = time.time()
+        agg_start = time.time()
+
+        training_loss = training_loss / round_epochs
+        training_accuracy = training_accuracy / round_epochs
+        pseudo_gradients = compute_pseudo_gradients(client_drifts)
+
+        with torch.no_grad():
+            update_l2_norm = math.sqrt(sum(torch.sum(g**2).item() for g in pseudo_gradients))
+
+        copy_parameters(from_params=round_start_active_params, to_params=active_params)
+        set_gradients(active_params, pseudo_gradients)
+        active_server_opt.step()
+        active_server_opt.zero_grad()
+
+        agg_end = time.time()
+        round_end_time = time.time()
+
+        target_epochs = controller_ratio * e_max
+        next_theta = (target_epochs / round_epochs) * var_subspace
+        if active_matrix == 'A':
+            theta_A = next_theta
+        else:
+            theta_B = next_theta
+
+        metrics = {
+            "method": method_name,
+            "round": r + 1,
+            "active_matrix": active_matrix,
+            "time_client_training": train_end - train_start,
+            "time_server_aggregation": agg_end - agg_start,
+            "time_round_total": round_end_time - round_start_time,
+            "update_l2_norm": update_l2_norm,
+            "round_epochs": round_epochs,
+            "round_steps": round_epochs * round_steps,
+            "variance": var_subspace,
+            "effective_variance": effective_variance,
+            "avg_norm_sq_drifts": avg_norm_sq_drifts,
+            "norm_sq_avg_drift": norm_sq_avg_drift,
+            "theta_phase": current_theta,
+            "controller_ratio": controller_ratio,
+        } | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
+
+        metrics['training_loss'] = training_loss / hyperparams['clients_per_round']
+        metrics['training_accuracy'] = training_accuracy / hyperparams['clients_per_round']
+        metrics_handler.append_round_metrics(metrics)
+
+        print(f"[{time.strftime('%H:%M:%S')}] Round {r + 1}/{hyperparams['total_rounds']} finished (Matrix {active_matrix}, Epochs: {round_epochs}, Ratio: {controller_ratio}).")
+        gc.collect()
+
+        if hyperparams.get('early_stopping') and check_dynamic_early_stopping(hyperparams, metrics_handler.round_metrics):
+            print(f"[{time.strftime('%H:%M:%S')}] Early stopping triggered at round {r + 1}.")
+            break
+
+    metrics_handler.save_metrics()
+
+
+# Canonical alias for calibrated experiments
+fda_rolora_dual_track_calibrated_opt = fda_rolora_dual_track_pure_opt

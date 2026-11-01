@@ -99,35 +99,6 @@ def federated_dirichlet_datasets(
     return client_datasets
 
 
-def tokenize_client_datasets(client_datasets: List[Dataset], tokenize_fn) -> List[Dataset]:
-    """
-    Tokenize and format a list of client datasets for PyTorch tensor ingestion.
-
-    Args:
-        client_datasets (list of Dataset): Raw client datasets.
-        tokenize_fn: Tokenization mapping function.
-
-    Returns:
-        list of Dataset: Formatted tokenized datasets.
-    """
-    expected_columns = ['labels', 'input_ids', 'token_type_ids', 'attention_mask']
-    tok_client_datasets = []
-
-    for client_dataset in client_datasets:
-        tok_client_dataset = client_dataset.map(tokenize_fn, batched=True)
-        if "label" in tok_client_dataset.column_names:
-            tok_client_dataset = tok_client_dataset.rename_column("label", "labels")
-        columns_to_remove = [
-            column for column in tok_client_dataset.column_names
-            if column not in expected_columns
-        ]
-        tok_client_dataset = tok_client_dataset.remove_columns(columns_to_remove)
-        tok_client_dataset.set_format("torch")
-        tok_client_datasets.append(tok_client_dataset)
-
-    return tok_client_datasets
-
-
 def preprocess_test_dataset(
     raw_test_dataset: Dataset,
     tokenize_fn,

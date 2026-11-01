@@ -512,3 +512,7 @@ def ffa_lora(hyperparams: Dict[str, Any]):
             break
 
     metrics_handler.save_metrics()
+
+
+# Canonical alias for RoLoRA experiments
+fedavg_rolora_opt = fedavg_rolora

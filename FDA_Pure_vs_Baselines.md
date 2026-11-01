@@ -134,19 +134,19 @@ For each benchmark dataset and parameter group, the complete multi-method teleme
 > Sentence-pair entailment classification across diverse genres (392,702 total pairs; capped at 25,000 samples = 6.37% used, 3 classes: entailment, neutral, contradiction).
 
 #### Parameter Group: **MNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$)**
-![MNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/01_MNLI_C20_R50_LR0.1_all6_telemetry_stacked.png)
+![MNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/01_MNLI_C20_R50_LR0.1_all6_telemetry_stacked.png)
 
-![MNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/01_MNLI_C20_R50_LR0.1_8_log_client_variance.png)
+![MNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/01_MNLI_C20_R50_LR0.1_8_log_client_variance.png)
 
 #### Parameter Group: **MNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$)**
-![MNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/03_MNLI_C50_R30_LR0.1_all6_telemetry_stacked.png)
+![MNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/03_MNLI_C50_R30_LR0.1_all6_telemetry_stacked.png)
 
-![MNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/03_MNLI_C50_R30_LR0.1_8_log_client_variance.png)
+![MNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/03_MNLI_C50_R30_LR0.1_8_log_client_variance.png)
 
 #### Parameter Group: **MNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$)**
-![MNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Complete Telemetry](FDA_Pure_vs_Baselines/17_MNLI_C20_R50_LR0.1_A0.5_all6_telemetry_stacked.png)
+![MNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/17_MNLI_C20_R50_LR0.1_A0.5_all6_telemetry_stacked.png)
 
-![MNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/17_MNLI_C20_R50_LR0.1_A0.5_8_log_client_variance.png)
+![MNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/17_MNLI_C20_R50_LR0.1_A0.5_8_log_client_variance.png)
 
 
 ---
@@ -155,19 +155,19 @@ For each benchmark dataset and parameter group, the complete multi-method teleme
 > Binary sentence-pair classification determining whether a passage sentence contains the answer to a question (104,743 total pairs; capped at 25,000 samples = 23.87% used, 2 classes: entailment, not_entailment).
 
 #### Parameter Group: **QNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$)**
-![QNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/05_QNLI_C20_R50_LR0.1_all6_telemetry_stacked.png)
+![QNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/05_QNLI_C20_R50_LR0.1_all6_telemetry_stacked.png)
 
-![QNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/05_QNLI_C20_R50_LR0.1_8_log_client_variance.png)
+![QNLI ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/05_QNLI_C20_R50_LR0.1_8_log_client_variance.png)
 
 #### Parameter Group: **QNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$)**
-![QNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/07_QNLI_C50_R30_LR0.1_all6_telemetry_stacked.png)
+![QNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/07_QNLI_C50_R30_LR0.1_all6_telemetry_stacked.png)
 
-![QNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/07_QNLI_C50_R30_LR0.1_8_log_client_variance.png)
+![QNLI ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/07_QNLI_C50_R30_LR0.1_8_log_client_variance.png)
 
 #### Parameter Group: **QNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$)**
-![QNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Complete Telemetry](FDA_Pure_vs_Baselines/18_QNLI_C20_R50_LR0.1_A0.5_all6_telemetry_stacked.png)
+![QNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/18_QNLI_C20_R50_LR0.1_A0.5_all6_telemetry_stacked.png)
 
-![QNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/18_QNLI_C20_R50_LR0.1_A0.5_8_log_client_variance.png)
+![QNLI Non-IID ($C=20, R=50, \text{lr}=0.1, \alpha=0.5$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/18_QNLI_C20_R50_LR0.1_A0.5_8_log_client_variance.png)
 
 
 ---
@@ -176,14 +176,14 @@ For each benchmark dataset and parameter group, the complete multi-method teleme
 > Binary semantic equivalence classification identifying whether two community questions from Quora are duplicates (363,846 total pairs; capped at 25,000 samples = 6.87% used, 2 classes: duplicate, not_duplicate).
 
 #### Parameter Group: **QQP ($C=20, R=50, \text{lr}=0.1, \alpha=1000$)**
-![QQP ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/09_QQP_C20_R50_LR0.1_all6_telemetry_stacked.png)
+![QQP ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/09_QQP_C20_R50_LR0.1_all6_telemetry_stacked.png)
 
-![QQP ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/09_QQP_C20_R50_LR0.1_8_log_client_variance.png)
+![QQP ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/09_QQP_C20_R50_LR0.1_8_log_client_variance.png)
 
 #### Parameter Group: **QQP ($C=50, R=30, \text{lr}=0.1, \alpha=1000$)**
-![QQP ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/10_QQP_C50_R30_LR0.1_all6_telemetry_stacked.png)
+![QQP ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/10_QQP_C50_R30_LR0.1_all6_telemetry_stacked.png)
 
-![QQP ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/10_QQP_C50_R30_LR0.1_8_log_client_variance.png)
+![QQP ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/10_QQP_C50_R30_LR0.1_8_log_client_variance.png)
 
 
 ---
@@ -192,11 +192,11 @@ For each benchmark dataset and parameter group, the complete multi-method teleme
 > Single-sentence binary sentiment classification (positive vs. negative) of movie review excerpts (67,349 total sentences; capped at 25,000 samples = 37.12% used, 2 classes: positive, negative).
 
 #### Parameter Group: **SST-2 ($C=20, R=50, \text{lr}=0.1, \alpha=1000$)**
-![SST-2 ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/11_SST2_C20_R50_LR0.1_all6_telemetry_stacked.png)
+![SST-2 ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/11_SST2_C20_R50_LR0.1_all6_telemetry_stacked.png)
 
-![SST-2 ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/11_SST2_C20_R50_LR0.1_8_log_client_variance.png)
+![SST-2 ($C=20, R=50, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/11_SST2_C20_R50_LR0.1_8_log_client_variance.png)
 
 #### Parameter Group: **SST-2 ($C=50, R=30, \text{lr}=0.1, \alpha=1000$)**
-![SST-2 ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](FDA_Pure_vs_Baselines/12_SST2_C50_R30_LR0.1_all6_telemetry_stacked.png)
+![SST-2 ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Complete Telemetry](figures/FDA_Pure_vs_Baselines/12_SST2_C50_R30_LR0.1_all6_telemetry_stacked.png)
 
-![SST-2 ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](FDA_Pure_vs_Baselines/12_SST2_C50_R30_LR0.1_8_log_client_variance.png)
+![SST-2 ($C=50, R=30, \text{lr}=0.1, \alpha=1000$) Inter-Client Drift Variance (Log Scale)](figures/FDA_Pure_vs_Baselines/12_SST2_C50_R30_LR0.1_8_log_client_variance.png)

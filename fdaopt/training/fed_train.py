@@ -12,57 +12,6 @@ from fdaopt import utils
 from fdaopt.models.ops import copy_parameters
 
 
-def federated_training_step(
-    model: torch.nn.Module,
-    train_params: List[torch.nn.Parameter],
-    client_train_params_dict: Dict[int, List[torch.Tensor]],
-    client_opt: torch.optim.Optimizer,
-    fed_ds
-) -> float:
-    """
-    Execute a single mini-batch training step across all clients in the parameter dictionary.
-
-    Args:
-        model (torch.nn.Module): Shared neural network model backbone.
-        train_params (list of torch.nn.Parameter): Trainable model parameter references.
-        client_train_params_dict (dict): Map of client IDs to their persistent parameter tensors.
-        client_opt (torch.optim.Optimizer): Client-side optimizer instance.
-        fed_ds (FederatedDataset): Batch generator provider for each client.
-
-    Returns:
-        float: Average training loss across the updated clients.
-    """
-    model.train()
-    training_loss = 0.0
-    num_clients = len(client_train_params_dict)
-
-    for client_id in client_train_params_dict.keys():
-        # Restore client-specific state into the model parameters
-        copy_parameters(
-            from_params=client_train_params_dict[client_id],
-            to_params=train_params
-        )
-
-        batch = fed_ds.next_client_batch(client_id)
-        batch = {k: v.to(utils.DEVICE) for k, v in batch.items()}
-
-        outputs = model(**batch)
-        loss = outputs.loss
-        loss.backward()
-
-        client_opt.step()
-        client_opt.zero_grad()
-
-        # Save updated client state back into the dictionary
-        copy_parameters(
-            from_params=train_params,
-            to_params=client_train_params_dict[client_id]
-        )
-        training_loss += loss.item()
-
-    return training_loss / num_clients
-
-
 def client_round_train(
     model: torch.nn.Module,
     train_params: List[torch.nn.Parameter],

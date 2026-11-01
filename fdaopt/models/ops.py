@@ -67,24 +67,6 @@ def average_client_parameters(client_train_params_dict: Dict[int, List[torch.Ten
 
 
 @torch.no_grad()
-def average_client_parameters2(client_train_params_dict: Dict[int, List[torch.Tensor]]) -> List[torch.Tensor]:
-    """
-    Compute layer-stacked mean of client parameter tensors.
-
-    Args:
-        client_train_params_dict (dict): Map of client IDs to lists of parameter tensors.
-
-    Returns:
-        list of torch.Tensor: Stacked mean parameter tensors on `utils.DEVICE`.
-    """
-    average_params = [
-        torch.mean(torch.stack([p.to(utils.DEVICE) for p in param_list]), dim=0)
-        for param_list in zip(*client_train_params_dict.values())
-    ]
-    return average_params
-
-
-@torch.no_grad()
 def compute_metrics(
     model: torch.nn.Module,
     ds_path: str,
@@ -358,41 +340,6 @@ def linear_variance_approx2(client_drifts: List[Dict[str, torch.Tensor]], global
         s_2_sq += torch.sum(avg_k ** 2).item()
 
     return s_1 - s_2_sq
-
-
-def get_ksi_unit2(global_current: Dict[str, torch.Tensor], global_prev: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-    """
-    Generate normalized projection vector ksi across state_dict entries without flattening.
-
-    Args:
-        global_current (dict): Current model state_dict.
-        global_prev (dict): Previous model state_dict.
-
-    Returns:
-        dict: Normalized projection state_dict.
-    """
-    ksi = {}
-    diff_norm_sq = 0.0
-
-    for k in global_current.keys():
-        diff = global_current[k] - global_prev[k]
-        ksi[k] = diff
-        diff_norm_sq += torch.sum(diff ** 2).item()
-
-    diff_norm = math.sqrt(diff_norm_sq)
-    if diff_norm == 0.0:
-        rand_norm_sq = 0.0
-        for k in ksi.keys():
-            ksi[k] = torch.randn_like(ksi[k])
-            rand_norm_sq += torch.sum(ksi[k] ** 2).item()
-        rand_norm = math.sqrt(rand_norm_sq)
-        for k in ksi.keys():
-            ksi[k] = ksi[k] / rand_norm
-    else:
-        for k in ksi.keys():
-            ksi[k] = ksi[k] / diff_norm
-
-    return ksi
 
 
 @torch.no_grad()

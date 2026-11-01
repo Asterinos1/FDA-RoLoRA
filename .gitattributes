@@ -1,14 +1,56 @@
-# Auto detect text files and perform LF normalization
+# ==============================================================================
+# Git Line Ending & Normalization Configuration
+# ==============================================================================
+# Default to auto-detect text files and normalize to LF in the object database
 * text=auto
 
-# Mark output payloads and metrics as generated (hides them from language stats and diffs)
-*.json linguist-generated=true
-*.csv linguist-generated=true
-results/* linguist-generated=true
-graphify-out/* linguist-generated=true
-
-# Explicitly mark PDF figures as binary
-*.pdf binary
-
-# Explicitly mark Python files
+# Explicit text files with LF line endings (ensures cross-platform integrity on Windows/Linux)
 *.py text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+*.md text
+*.txt text
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text
+*.toml text
+*.ini text
+*.cfg text
+
+# ==============================================================================
+# Binary File Declarations (No line-ending conversion or text diffs)
+# ==============================================================================
+# Images & Figures
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.svg text
+
+# Model Weights & Checkpoints
+*.pt binary
+*.pth binary
+*.bin binary
+*.safetensors binary
+*.onnx binary
+*.ckpt binary
+
+# Archives & Shared Libraries
+*.tar.gz binary
+*.zip binary
+*.gz binary
+*.so binary
+*.dll binary
+*.dylib binary
+
+# ==============================================================================
+# GitHub Linguist Overrides & Diff Optimizations
+# ==============================================================================
+# Treat CSV metrics and JSON telemetry logs as generated to preserve language statistics
+*.csv linguist-generated=true
+*.json linguist-generated=true
+results/* linguist-generated=true
+results/round_metrics/* linguist-generated=true
+figures/* linguist-generated=true
