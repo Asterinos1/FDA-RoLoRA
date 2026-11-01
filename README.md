@@ -40,8 +40,8 @@ This repository directly expands upon the open-source implementation from the [F
 
 ## Releases
 
-* [**`v1.0.0` — Thesis & Experimental Benchmark Release**](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest)
-  * 📥 **[Download Latest Release (v1.0.0)](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest)** ([Source Code .zip](https://github.com/Asterinos1/FDA-RoLoRA/archive/refs/tags/v1.0.0.zip) | [Source Code .tar.gz](https://github.com/Asterinos1/FDA-RoLoRA/archive/refs/tags/v1.0.0.tar.gz))
+* [**`v1.0.0` : Thesis & Experimental Benchmark Release**](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest)
+  * **[Download Latest Release (v1.0.0)](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest)** ([Source Code .zip](https://github.com/Asterinos1/FDA-RoLoRA/archive/refs/tags/v1.0.0.zip) | [Source Code .tar.gz](https://github.com/Asterinos1/FDA-RoLoRA/archive/refs/tags/v1.0.0.tar.gz))
   * Official release snapshot capturing the exact state of the codebase used to execute all experimental evaluations and GLUE benchmark suites reported in the diploma thesis.
   * Contains the complete FDA-RoLoRA Dual-Track framework (calibrated $\kappa$ controller, Matrix $\mathbf{B}$ variance discounting), all baseline architectures (FedAvg-LoRA, FedOpt-LoRA, RoLoRA, FFA-LoRA), cluster orchestration scripts, and raw per-round telemetry logs.
 
