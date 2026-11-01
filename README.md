@@ -2,12 +2,12 @@
 
 # FDA-RoLoRA: Federated Dynamic Averaging for Robust Low-Rank Adaptation
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/) [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Transformers%20%7C%20PEFT-ffcc00)](https://huggingface.co/) [![Topic](https://img.shields.io/badge/Domain-Federated%20Learning%20%7C%20LoRA%20%7C%20Fine%20Tuning-8A2BE2)](#abstract)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Release: v1.0.0](https://img.shields.io/badge/Release-v1.0.0-blue.svg?logo=github)](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest) [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/) [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/) [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Transformers%20%7C%20PEFT-ffcc00)](https://huggingface.co/) [![Topic](https://img.shields.io/badge/Domain-Federated%20Learning%20%7C%20LoRA%20%7C%20Fine%20Tuning-8A2BE2)](#abstract)
 
 <p align="center">
   <a href="#abstract"><b>Abstract</b></a> •
   <a href="#acknowledgments--prior-work"><b>Acknowledgments</b></a> •
-  <a href="#releases"><b>Releases</b></a> •
+  <a href="https://github.com/Asterinos1/FDA-RoLoRA/releases/latest"><b>Latest Release</b></a> •
   <a href="#repository-structure"><b>Repo Structure</b></a> •
   <a href="#environment-setup"><b>Environment Setup</b></a> •
   <a href="#citation"><b>Citation</b></a> •
@@ -40,7 +40,8 @@ This repository directly expands upon the open-source implementation from the [F
 
 ## Releases
 
-* **`v1.0.0` — Thesis & Experimental Benchmark Release (Snapshot Template)**
+* [**`v1.0.0` — Thesis & Experimental Benchmark Release**](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest)
+  * 📥 **[Download Latest Release (v1.0.0)](https://github.com/Asterinos1/FDA-RoLoRA/releases/latest)** ([Source Code .zip](https://github.com/Asterinos1/FDA-RoLoRA/archive/refs/tags/v1.0.0.zip) | [Source Code .tar.gz](https://github.com/Asterinos1/FDA-RoLoRA/archive/refs/tags/v1.0.0.tar.gz))
   * Official release snapshot capturing the exact state of the codebase used to execute all experimental evaluations and GLUE benchmark suites reported in the diploma thesis.
   * Contains the complete FDA-RoLoRA Dual-Track framework (calibrated $\kappa$ controller, Matrix $\mathbf{B}$ variance discounting), all baseline architectures (FedAvg-LoRA, FedOpt-LoRA, RoLoRA, FFA-LoRA), cluster orchestration scripts, and raw per-round telemetry logs.
 
