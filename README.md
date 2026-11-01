@@ -16,7 +16,7 @@
 
 </div>
 
-This repository contains the official codebase and experimental evaluation for my diploma thesis at the School of ECE, Technical University of Crete: **"Investigating the applicability of Federated Dynamic Averaging in Federated Low-Rank Adaptation Architectures"**.
+This repository contains the official codebase and experimental evaluation for my diploma thesis at the School of ECE, Technical University of Crete: **"Investigating the Applicability of Federated Dynamic Averaging in Federated Low-Rank Adaptation Architectures"**.
 
 ---
 
@@ -105,7 +105,7 @@ If you find this work or codebase helpful in your research, please cite:
 
 ```bibtex
 @mastersthesis{karalis2026fdarolora,
-  title  = {Investigating the applicability of Federated Dynamic Averaging in Federated Low-Rank Adaptation Architectures},
+  title  = {Investigating the Applicability of Federated Dynamic Averaging in Federated Low-Rank Adaptation Architectures},
   author = {Karalis, Asterinos},
   school = {School of Electrical and Computer Engineering, Technical University of Crete},
   year   = {2026},
